@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/dashboard/DashboardLayout';
 import Button from '../components/common/Button';
 import Alert from '../components/common/Alert';
-import Modal from '../components/common/Modal'; // changed
+import Modal from '../components/common/modal'; // changed
 import useAuth from '../hooks/useAuth';
 import { 
   getAllStudents,  

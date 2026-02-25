@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import Alert from '../../components/common/Alert';
 import Button from '../../components/common/Button';
-import Modal from '../../components/common/Modal';
+import Modal from '../../components/common/modal';
 import useAuth from '../../hooks/useAuth';
 import secretaryService from '../../services/secretaryService';
 import { getStudentById, getStudents } from '../../services/studentService';

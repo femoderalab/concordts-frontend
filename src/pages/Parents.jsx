@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/dashboard/DashboardLayout';
 import Button from '../components/common/Button';
 import Alert from '../components/common/Alert';
-import Modal from '../components/common/Modal';
+import Modal from '../components/common/modal';
 import useAuth from '../hooks/useAuth';
 
 import { 
