@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+//modal
 
 const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   useEffect(() => {
