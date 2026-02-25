@@ -183,6 +183,13 @@ export const getPaymentMethodOptions = () => [
   { value: 'mobile_money', label: 'Mobile Money' },
 ];
 
+/**
+ * Format fee amount (alias for formatNaira)
+ * @param {number|string} amount - Amount to format
+ * @returns {string} - Formatted amount
+ */
+export const formatFee = (amount) => formatNaira(amount, true);
+
 // =====================
 // DOCUMENT OPTIONS
 // =====================
@@ -821,6 +828,7 @@ const studentUtils = {
   canPromoteStudent,
   generateRegistrationNumber,
   generateAdmissionNumber,
+  formatFee,
 };
 
 export default studentUtils;

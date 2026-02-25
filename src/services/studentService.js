@@ -14,6 +14,8 @@ import { getAccessToken as getToken, getUserData } from '../utils/storage'; // A
 // =====================
 // USER REGISTRATION (STEP 1)
 // =====================
+// Alias for backward compatibility
+export const createStudent = createStudentWithUser;
 
 /**
  * Create a user account for student (Step 1)
@@ -1101,6 +1103,57 @@ export const getStudentByRegistrationNumber = async (registrationNumber) => {
   }
 };
 
+/**
+ * Create student enrollment
+ * @param {number} studentId - Student ID
+ * @param {Object} enrollmentData - Enrollment data
+ * @returns {Promise<Object>} - Enrollment result
+ */
+export const createStudentEnrollment = async (studentId, enrollmentData) => {
+  try {
+    console.log(`📝 Creating enrollment for student ${studentId}...`);
+    
+    const response = await api.post(`/students/api/${studentId}/enroll/`, enrollmentData);
+    
+    console.log('✅ Enrollment created:', response.data);
+    return response.data;
+    
+  } catch (error) {
+    console.error(`❌ Error creating enrollment for student ${studentId}:`, error);
+    
+    let errorMessage = 'Failed to create enrollment';
+    
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      if (errorData.detail) errorMessage = errorData.detail;
+      else if (errorData.error) errorMessage = errorData.error;
+      else if (errorData.message) errorMessage = errorData.message;
+    }
+    
+    throw new Error(errorMessage);
+  }
+};
+
+/**
+ * Get student enrollments
+ * @param {number} studentId - Student ID
+ * @returns {Promise<Object>} - Enrollments list
+ */
+export const getStudentEnrollments = async (studentId) => {
+  try {
+    console.log(`📋 Fetching enrollments for student ${studentId}...`);
+    
+    const response = await api.get(`/students/api/${studentId}/enrollments/`);
+    
+    console.log('✅ Enrollments fetched:', response.data);
+    return response.data;
+    
+  } catch (error) {
+    console.error(`❌ Error fetching enrollments for student ${studentId}:`, error);
+    return { results: [], count: 0 };
+  }
+};
+
 
 // studentService.js
 
@@ -1121,6 +1174,7 @@ export const getStudentDashboard = async () => {
 
 const studentService = {
   // Step 1: User Creation
+  createStudent,
   createStudentUser,
   
   // Step 2: Student Profile Creation
@@ -1141,6 +1195,8 @@ const studentService = {
   searchStudents,
   getStudents,
   deleteStudent,
+  createStudentEnrollment,   
+  getStudentEnrollments,
   
   // Password Management
   updateStudentPassword,

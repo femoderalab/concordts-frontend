@@ -8,6 +8,8 @@ import api from './api';
 // =====================
 // PARENT CRUD OPERATIONS
 // =====================
+// Aliases for backward compatibility
+export const getParents = getAllParents; // replace getAllParents with whatever the real name is
 
 export const getAllParents = async (params = {}) => {
   try {

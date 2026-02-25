@@ -176,6 +176,8 @@ export const checkUserExists = async (registration_number) => {
   }
 };
 
+export const updateUserProfile = updateProfile; // or updateUser, or patchProfile
+
 export const authService = {
   register,
   login,
