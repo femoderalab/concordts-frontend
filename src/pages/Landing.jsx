@@ -180,7 +180,7 @@ const Landing = () => {
         </div>
       </div>
 
-      {/* ===== FIXED NAVBAR ===== */}
+{/* ===== FIXED NAVBAR ===== */}
       <nav className={`fixed top-[44px] sm:top-[48px] left-0 right-0 z-50 transition-all duration-300 ${
         scrolled ? 'bg-white shadow-xl' : 'bg-white/98 backdrop-blur-sm shadow-md'
       } border-b border-gray-100`}>
@@ -191,7 +191,6 @@ const Landing = () => {
               <img src="/logo.png" alt="Concord Tutors School" className="h-10 w-10 sm:h-14 sm:w-14 object-contain" />
               <div className="hidden sm:block">
                 <span className="text-base sm:text-xl font-bold text-gray-900 block leading-tight font-heading">Concord Tutors School</span>
-
               </div>
             </div>
 
@@ -215,6 +214,12 @@ const Landing = () => {
                 className="bg-[#2b2f83] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#1f2361] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
               >
                 Apply Now
+              </button>
+              <button
+                onClick={() => window.location.href = '/login'}
+                className="bg-white text-[#2b2f83] border-2 border-[#2b2f83] px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#2b2f83] hover:text-white transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
+              >
+                Login
               </button>
             </div>
 
@@ -255,6 +260,12 @@ const Landing = () => {
                 className="w-full bg-[#2b2f83] text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-[#1f2361] transition-all shadow-md"
               >
                 Apply Now
+              </button>
+              <button
+                onClick={() => window.location.href = '/login'}
+                className="w-full bg-white text-[#2b2f83] border-2 border-[#2b2f83] px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-[#2b2f83] hover:text-white transition-all shadow-md"
+              >
+                Login
               </button>
             </div>
           </div>

@@ -10,7 +10,7 @@ import {
 
 // Get base URL from environment variable or use default
 // IMPORTANT: If your Django API is at http://localhost:8000/api/ then:
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://concordts-backend.onrender.com/api';
 
 /**
  * Create axios instance with default configuration
