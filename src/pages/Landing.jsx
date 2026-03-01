@@ -216,11 +216,11 @@ const Landing = () => {
                 Apply Now
               </button>
               <button
-                onClick={() => window.location.href = '/login'}
-                className="bg-white text-[#2b2f83] border-2 border-[#2b2f83] px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#2b2f83] hover:text-white transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
-              >
-                Login
-              </button>
+  onClick={() => navigate('/login')}
+  className="bg-white text-[#2b2f83] border-2 border-[#2b2f83] px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#2b2f83] hover:text-white transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
+>
+  Login
+</button>
             </div>
 
             {/* Mobile Menu Button */}
@@ -262,11 +262,11 @@ const Landing = () => {
                 Apply Now
               </button>
               <button
-                onClick={() => window.location.href = '/login'}
-                className="w-full bg-white text-[#2b2f83] border-2 border-[#2b2f83] px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-[#2b2f83] hover:text-white transition-all shadow-md"
-              >
-                Login
-              </button>
+  onClick={() => navigate('/login')}
+  className="w-full bg-white text-[#2b2f83] border-2 border-[#2b2f83] px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-[#2b2f83] hover:text-white transition-all shadow-md"
+>
+  Login
+</button>
             </div>
           </div>
         )}
