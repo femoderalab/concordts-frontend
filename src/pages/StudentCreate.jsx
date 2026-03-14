@@ -83,6 +83,8 @@ const validatePhone = (phone) => {
   return re.test(phone.replace(/\s/g, ''));
 };
 
+
+
 const StudentCreate = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -389,7 +391,8 @@ const StudentCreate = () => {
         first_name: userData.first_name.trim(),
         last_name: userData.last_name.trim(),
         email: userData.email?.trim() || null, // Can be null
-        phone_number: userData.phone_number?.trim() || null, // Can be null
+        // phone_number: userData.phone_number?.trim() || null, // Can be null
+        phone_number: userData.phone_number?.trim() || '', // Send empty string, not null
         password: userData.password,
         password2: userData.password2,
         role: 'student', // Always student

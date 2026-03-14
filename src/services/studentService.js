@@ -3,19 +3,12 @@ import api from './api';
 import userService from './userService';
 import { getAccessToken as getToken, getUserData } from '../utils/storage'; // ADD THIS LINE
 
-
-// ... rest of your studentService.js code remains exactly the same ...
-
 /**
  * Student Service - Comprehensive student creation and management
  * Handles user registration + student profile creation in separate steps
  */
 
-// =====================
-// USER REGISTRATION (STEP 1)
-// =====================
-// Alias for backward compatibility
-export const createStudent = createStudentWithUser;
+
 
 /**
  * Create a user account for student (Step 1)
@@ -32,8 +25,10 @@ export const createStudentUser = async (userData) => {
       ...userData,
       role: 'student', // Force role to student
       // These fields can be empty/optional
-      email: userData.email?.trim() || null,
-      phone_number: userData.phone_number?.trim() || null
+      // email: userData.email?.trim() || null,
+      // phone_number: userData.phone_number?.trim() || null
+      email: userData.email?.trim() || '',
+      phone_number: userData.phone_number?.trim() || ''
     };
     
     console.log('📦 User data:', studentUserData);
@@ -1167,6 +1162,11 @@ export const getStudentDashboard = async () => {
   }
 };
 
+// =====================
+// USER REGISTRATION (STEP 1)
+// =====================
+// Alias for backward compatibility
+export const createStudent = createStudentWithUser;
 
 // =====================
 // EXPORT SERVICE

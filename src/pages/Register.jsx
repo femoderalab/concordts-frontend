@@ -408,18 +408,7 @@ const Register = () => {
                 helperText="Format: 08012345678 or +2348012345678"
                 disabled={loading}
               />
-
-              <Input
-                label="I am a"
-                name="role"
-                type="select"
-                value={formData.role}
-                onChange={handleChange}
-                required
-                disabled={loading}
-                options={roleOptions}
-              />
-
+            
               <Input
                 label="Gender"
                 name="gender"
@@ -432,15 +421,7 @@ const Register = () => {
                 options={genderOptions}
               />
 
-              <Button
-                type="submit"
-                variant="primary"
-                fullWidth
-                disabled={loading}
-                className="mt-6"
-              >
-                Next Step
-              </Button>
+              
             </form>
           )}
 
@@ -533,15 +514,7 @@ const Register = () => {
                 >
                   Back
                 </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  fullWidth
-                  loading={loading}
-                  disabled={loading}
-                >
-                  {loading ? 'Creating Account...' : 'Create Account'}
-                </Button>
+                
               </div>
             </form>
           )}
