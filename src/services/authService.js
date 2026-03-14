@@ -1,5 +1,5 @@
 /**
- * Authentication service
+ * Authentication services and 
  * Handles all authentication-related API calls matching Django backend
  */
 
