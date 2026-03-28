@@ -38,3 +38,7 @@ frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
+
+echo "vite.config.js.timestamp-*" >> .gitignore
+git rm --cached "vite.config.js.timestamp-1773731576194-4cf56a997bae3.mjs"
+git rm --cached "vite.config.js.timestamp-1774071052215-293507d1ba52c.mjs"

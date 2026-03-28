@@ -154,8 +154,8 @@ const Landing = () => {
                   <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                   <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                 </svg>
-                <span className="hidden lg:inline font-medium">concordtutorsnurprysch@gmail.com</span>
-                <span className="lg:hidden font-medium">Email</span>
+                <span className="hidden lg:inline font-small">concordtutorsnurprysch@gmail.com</span>
+                <span className="lg:hidden font-small">Email</span>
               </a>
               <a href="https://web.facebook.com/people/Concord-Tutors-School/61566890415370/" target="_blank" rel="noopener noreferrer" className="text-white hover:text-blue-200 transition-colors" aria-label="Facebook">
                 <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -174,7 +174,7 @@ const Landing = () => {
               <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
               </svg>
-              <span className="font-medium leading-tight">NO 31, Adeagbo Yayi Street, Zone 4, Behind Capital Hotel, Osogbo, Nigeria</span>
+              <span className="font-small leading-tight">NO 31, Adeagbo Yayi Street, Zone 4, Behind Capital Hotel, Osogbo, Osun State, Nigeria</span>
             </div>
           </div>
         </div>
@@ -324,10 +324,10 @@ const Landing = () => {
             {/* Left Content */}
             <div className="text-center lg:text-left space-y-4 sm:space-y-6 animate-fadeInLeft">
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 leading-tight font-heading">
-                We Provide Quality Education For Your Ward
+                We Provide Quality Education <br /> For Your Ward
               </h1>
               <p className="text-sm sm:text-base lg:text-lg text-gray-700 leading-relaxed">
-                Excellence in Academic Development, Emotional Growth, Moral & Religious Values, Socio-Cultural Understanding, and a Serene Learning Environment
+                Excellence in Academic Development, Emotional Growth, Moral & Religious Values, <br /> Socio-Cultural Understanding, and a Serene Learning Environment
               </p>
 
               {/* Buttons */}

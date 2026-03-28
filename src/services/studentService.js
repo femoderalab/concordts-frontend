@@ -451,10 +451,34 @@ export const updateStudent = async (studentId, data) => {
     ];
     
     // Fields that have NOT NULL constraint and need default value
+    // const notNullFields = {
+    //   'address': '',
+    //   'city': '',
+    //   'lga': '',
+    //   'home_language': '',
+    //   'previous_class': '',
+    //   'previous_school': '',
+    //   'transfer_certificate_no': '',
+    //   'prefect_role': '',
+    //   'emergency_contact_name': '',
+    //   'emergency_contact_phone': '',
+    //   'emergency_contact_relationship': '',
+    //   'allergy_details': '',
+    //   'family_doctor_name': '',
+    //   'family_doctor_phone': '',
+    //   'medical_conditions': '',
+    //   'learning_difficulties_details': '',
+    //   'bus_route': '',
+    //   'blood_group': '',
+    //   'genotype': '',
+    //   'place_of_birth': ''
+    // };
+
     const notNullFields = {
       'address': '',
       'city': '',
       'lga': '',
+      'phone_number': '0000000000',
       'home_language': '',
       'previous_class': '',
       'previous_school': '',
@@ -478,59 +502,112 @@ export const updateStudent = async (studentId, data) => {
     // PROCESS REGULAR FIELDS
     // =====================
     console.log('📝 Processing regular fields...');
-    allFields.forEach(field => {
-      if (field in data) {
-        let value = data[field];
+    // allFields.forEach(field => {
+    //   if (field in data) {
+    //     let value = data[field];
         
-        // Skip file fields here
-        if (value instanceof File) {
-          return;
-        }
+    //     // Skip file fields here
+    //     if (value instanceof File) {
+    //       return;
+    //     }
         
-        // Handle null/undefined values
-        if (value === null || value === undefined) {
-          // For NOT NULL fields, use empty string as default
-          if (field in notNullFields) {
-            value = notNullFields[field];
-            console.log(`  ✓ ${field}: "${value}" (default for NOT NULL field)`);
-          } else {
-            // For nullable fields, send empty string
-            value = '';
-            console.log(`  ✓ ${field}: "" (empty - nullable field)`);
-          }
-        } else if (value === '') {
-          // Already empty string - keep it for NOT NULL fields
-          if (field in notNullFields) {
-            console.log(`  ✓ ${field}: "" (empty - NOT NULL field, will be stored as empty)`);
-          } else {
-            console.log(`  ✓ ${field}: "" (empty - nullable field)`);
-          }
-        } else {
-          // Has value
-          console.log(`  ✓ ${field}: "${value}" (type: ${typeof data[field]})`);
-        }
+    //     // Handle null/undefined values
+    //     if (value === null || value === undefined) {
+    //       // For NOT NULL fields, use empty string as default
+    //       if (field in notNullFields) {
+    //         value = notNullFields[field];
+    //         console.log(`  ✓ ${field}: "${value}" (default for NOT NULL field)`);
+    //       } else {
+    //         // For nullable fields, send empty string
+    //         value = '';
+    //         console.log(`  ✓ ${field}: "" (empty - nullable field)`);
+    //       }
+    //     } else if (value === '') {
+    //       // Already empty string - keep it for NOT NULL fields
+    //       if (field in notNullFields) {
+    //         console.log(`  ✓ ${field}: "" (empty - NOT NULL field, will be stored as empty)`);
+    //       } else {
+    //         console.log(`  ✓ ${field}: "" (empty - nullable field)`);
+    //       }
+    //     } else {
+    //       // Has value
+    //       console.log(`  ✓ ${field}: "${value}" (type: ${typeof data[field]})`);
+    //     }
         
-        // Handle boolean fields
-        if (typeof value === 'boolean') {
-          value = value.toString();
-        }
+    //     // Handle boolean fields
+    //     if (typeof value === 'boolean') {
+    //       value = value.toString();
+    //     }
         
-        // Handle numeric fields
-        if (field === 'total_fee_amount' || field === 'amount_paid') {
-          value = value ? parseFloat(value).toString() : '0';
-        }
+    //     // Handle numeric fields
+    //     if (field === 'total_fee_amount' || field === 'amount_paid') {
+    //       value = value ? parseFloat(value).toString() : '0';
+    //     }
         
-        // Handle class_level
-        if (field === 'class_level' && value && typeof value === 'object' && value.id) {
-          value = value.id.toString();
-        } else if (field === 'class_level' && value) {
-          value = value.toString();
-        }
+    //     // Handle class_level
+    //     if (field === 'class_level' && value && typeof value === 'object' && value.id) {
+    //       value = value.id.toString();
+    //     } else if (field === 'class_level' && value) {
+    //       value = value.toString();
+    //     }
         
-        formData.append(field, value);
-      }
-    });
+    //     formData.append(field, value);
+    //   }
+    // });
     
+    allFields.forEach(field => {
+      // Always process every field, even if not in data
+      // This ensures NOT NULL fields always get a value sent to backend
+      let value = field in data ? data[field] : undefined;
+
+      // Skip file fields here
+      if (value instanceof File) {
+        return;
+      }
+
+      // Handle null/undefined values
+      if (value === null || value === undefined) {
+        // For NOT NULL fields, use empty string as default
+        if (field in notNullFields) {
+          value = notNullFields[field];
+          console.log(`  ✓ ${field}: "${value}" (default for NOT NULL field)`);
+        } else {
+          // For nullable fields, send empty string
+          value = '';
+          console.log(`  ✓ ${field}: "" (empty - nullable field)`);
+        }
+      } else if (value === '') {
+        // Already empty string
+        if (field in notNullFields) {
+          console.log(`  ✓ ${field}: "" (empty - NOT NULL field, will be stored as empty)`);
+        } else {
+          console.log(`  ✓ ${field}: "" (empty - nullable field)`);
+        }
+      } else {
+        // Has value
+        console.log(`  ✓ ${field}: "${value}" (type: ${typeof value})`);
+      }
+
+      // Handle boolean fields
+      if (typeof value === 'boolean') {
+        value = value.toString();
+      }
+
+      // Handle numeric fields
+      if (field === 'total_fee_amount' || field === 'amount_paid') {
+        value = value ? parseFloat(value).toString() : '0';
+      }
+
+      // Handle class_level
+      if (field === 'class_level' && value && typeof value === 'object' && value.id) {
+        value = value.id.toString();
+      } else if (field === 'class_level' && value) {
+        value = value.toString();
+      }
+
+      formData.append(field, value);
+    });
+
     // =====================
     // PROCESS FILE FIELDS
     // =====================
@@ -569,14 +646,39 @@ export const updateStudent = async (studentId, data) => {
     // =====================
     // SEND REQUEST
     // =====================
-    console.log(`🚀 Sending PUT request to /students/api/${studentId}/full-update/`);
+    // console.log(`🚀 Sending PUT request to /students/api/${studentId}/full-update/`);
     
-    const response = await api.put(`/students/api/${studentId}/full-update/`, formData, {
+    // const response = await api.put(`/students/api/${studentId}/full-update/`, formData, {
+    //   headers: {
+    //     'Content-Type': 'multipart/form-data',
+    //   },
+    // });
+// Check if any files are being sent
+  const hasFiles = Array.from(formData.entries()).some(([, value]) => value instanceof File);
+
+  console.log(`🚀 Sending request to /students/api/${studentId}/full-update/`);
+
+  let response;
+
+  if (hasFiles) {
+    // Only use multipart if files are present
+    response = await api.put(`/students/api/${studentId}/full-update/`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-    
+  } else {
+    // No files — send as plain JSON (much faster)
+    const jsonData = {};
+    for (let [key, value] of formData.entries()) {
+      jsonData[key] = value;
+    }
+    response = await api.put(`/students/api/${studentId}/full-update/`, jsonData, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  }
     console.log('✅ UPDATE SUCCESSFUL');
     console.log('📊 Response:', response.data);
     
@@ -590,7 +692,8 @@ export const updateStudent = async (studentId, data) => {
     
     if (error.response?.data) {
       const errorData = error.response.data;
-      console.error('🔍 Backend error details:', errorData);
+      // console.error('🔍 Backend error details:', errorData);
+      console.log('🔍 Backend error details:', JSON.stringify(errorData, null, 2));
       
       if (errorData.message) {
         errorMessage = errorData.message;
