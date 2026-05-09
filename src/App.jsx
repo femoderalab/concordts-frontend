@@ -1,10 +1,3 @@
-
-/**
- * App Component
- * Main application component with comprehensive routing configuration
- * Enhanced with lazy loading, route guards, and better organization
- */
-
 import React, { Suspense, lazy } from 'react';
 import {
   BrowserRouter,
