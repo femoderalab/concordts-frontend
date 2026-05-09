@@ -7,7 +7,6 @@ import {
 } from 'react-router-dom';
 
 import { AuthProvider } from './context/AuthContext';
-// ✅ CORRECT - Use this instead
 import ProtectedRoute, {
   PublicRoute,
   StudentRoute,
