@@ -718,7 +718,7 @@ const Dashboard = () => {
                 {stats?.paymentPercentage || 0}%
               </div>
               <div className="text-xs text-gray-500">
-                ₦{(stats?.totalAmountPaid || 0).toLocaleString()} collected
+                ₦{Number(stats?.totalAmountPaid || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} collected
               </div>
             </div>
           </div>
@@ -791,13 +791,13 @@ const Dashboard = () => {
                     >
                       <RefreshCw size={16} className={refreshing ? 'animate-spin text-blue-500' : 'text-gray-500 hover:text-blue-500'} />
                     </button>
-                    <Button
+                    {/* <Button
                       variant="outline"
                       size="sm"
                       onClick={() => navigate('/admin/activities')}
                     >
                       View All
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
                 
@@ -904,6 +904,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
-
-

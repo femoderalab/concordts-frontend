@@ -137,7 +137,6 @@ const Sidebar = () => {
       path: '/students', 
       label: 'Students', 
       icon: <Users size={20} />,
-      badge: '12'
     },
     { 
       path: '/parents', 
@@ -381,31 +380,6 @@ const Sidebar = () => {
             {renderMenuItem(menuItems[6])}
 
           </div>
-          
-          {/* Quick Stats - Only shown when not collapsed */}
-          {!isCollapsed && expandedSections.academics && (
-            <div className="mt-4 px-3 py-3 bg-gray-800/50 rounded-lg border border-gray-700">
-              <p className="text-xs text-gray-400 mb-2 font-medium">Academic Overview</p>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="text-center">
-                  <p className="text-xs text-gray-500">Sessions</p>
-                  <p className="text-sm text-white font-bold">6</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500">Classes</p>
-                  <p className="text-sm text-white font-bold">18</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500">Subjects</p>
-                  <p className="text-sm text-white font-bold">59</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500">Programs</p>
-                  <p className="text-sm text-white font-bold">6</p>
-                </div>
-              </div>
-            </div>
-          )}
         </nav>
 
         {/* User Profile and System Status - Only shown when not collapsed */}

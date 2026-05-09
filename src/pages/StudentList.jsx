@@ -1333,34 +1333,33 @@ const generateStudentPrintableHTML = (student) => {
 
   const submitEditForm = async (e) => {
     e.preventDefault();
-    
-    // ... validation code ...
-    
+
+    // Validation
+    const errors = {};
+    if (!editForm.first_name?.trim()) errors.first_name = 'First name is required';
+    if (!editForm.last_name?.trim()) errors.last_name = 'Last name is required';
+    if (!editForm.class_level) errors.class_level = 'Class level is required';
+
+    setEditErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     try {
       setEditLoading(true);
       setError('');
-      
-      // Prepare update data
+
       const updateData = {};
-      
-      // =====================
-      // USER FIELDS
-      // =====================
+
+      // User fields
       const userFields = [
         'first_name', 'last_name', 'email', 'phone_number',
         'gender', 'date_of_birth', 'address', 'city',
         'state_of_origin', 'lga', 'nationality'
       ];
-      
       userFields.forEach(field => {
-        if (field in editForm) {
-          updateData[field] = editForm[field] || '';
-        }
+        if (field in editForm) updateData[field] = editForm[field] || '';
       });
-      
-      // =====================
-      // STUDENT FIELDS
-      // =====================
+
+      // Student fields
       const studentFields = [
         'class_level', 'stream', 'admission_date', 'student_category',
         'house', 'place_of_birth', 'home_language', 'previous_class',
@@ -1373,52 +1372,69 @@ const generateStudentPrintableHTML = (student) => {
         'learning_difficulties_details', 'transportation_mode', 'bus_route',
         'is_active', 'is_graduated', 'graduation_date'
       ];
-      
       studentFields.forEach(field => {
         if (field in editForm && editForm[field] !== undefined) {
           updateData[field] = editForm[field];
         }
       });
-      
-      // =====================
-      // PARENT FIELDS - ONLY IF VALID
-      // =====================
-      // DON'T send father/mother unless they have actual values
+
+      // Parent fields — only if valid
       if (editForm.father && editForm.father !== '' && editForm.father !== null) {
         updateData.father = editForm.father;
       }
-      
       if (editForm.mother && editForm.mother !== '' && editForm.mother !== null) {
         updateData.mother = editForm.mother;
       }
-      
-      // =====================
-      // FILES
-      // =====================
+
+      // File fields
       const fileFields = [
         'student_image', 'birth_certificate', 'immunization_record',
         'previous_school_report', 'parent_id_copy', 'fee_payment_evidence'
       ];
-      
       fileFields.forEach(field => {
         if (editForm[field] instanceof File) {
           updateData[field] = editForm[field];
         }
       });
-      
-      // =====================
-      // SEND UPDATE
-      // =====================
-      const response = await updateStudent(selectedStudent.id, updateData);
-      
-      // ... success handling ...
-      
+
+      await updateStudent(selectedStudent.id, updateData);
+
+      // ✅ SUCCESS — show message, close modal, reload list
+      const studentName = editForm.first_name
+        ? `${editForm.first_name} ${editForm.last_name || ''}`.trim()
+        : selectedStudent?.admission_number || 'Student';
+
+      setSuccess(`${studentName} updated successfully!`);
+      setShowEditModal(false);
+      setSelectedStudent(null);
+      setEditErrors({});
+      loadStudents();
+
+      setTimeout(() => setSuccess(''), 4000);
+
     } catch (err) {
-      // ... error handling ...
+      console.error('❌ Error updating student:', err);
+
+      // Show backend validation errors if available
+      if (err.response?.data) {
+        const backendErrors = err.response.data;
+        const fieldErrors = {};
+        Object.keys(backendErrors).forEach(key => {
+          const msg = backendErrors[key];
+          fieldErrors[key] = Array.isArray(msg) ? msg[0] : msg;
+        });
+        if (Object.keys(fieldErrors).length > 0) {
+          setEditErrors(fieldErrors);
+        }
+      }
+
+      setError(err.message || 'Failed to update student. Please try again.');
+
+    } finally {
+      // ✅ THIS IS THE FIX — always runs, stops the spinner
+      setEditLoading(false);
     }
   };
-
-
 
   // Pagination controls
   const renderPagination = () => {
@@ -1633,9 +1649,9 @@ const generateStudentPrintableHTML = (student) => {
     const vaccinations = student.has_received_vaccinations ? 'Complete' : 'Incomplete';
     
     // Financial info
-    const balanceDue = student.balance_due || 0;
-    const totalFee = student.total_fee_amount || 0;
-    const amountPaid = student.amount_paid || 0;
+    const totalFee = Number(student.total_fee_amount || 0);
+    const amountPaid = Number(student.amount_paid || 0);
+    const balanceDue = Number(student.balance_due ?? (totalFee - amountPaid));
     
     // Document status
     const documentStatus = {
@@ -2489,15 +2505,21 @@ const generateStudentPrintableHTML = (student) => {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                     <div className="text-xs text-blue-700 font-medium mb-1">Fee Balance</div>
-                    <div className="text-lg font-bold text-blue-800">₦{balanceDue.toLocaleString()}</div>
+                    <div className="text-lg font-bold text-blue-800">
+                      ₦{Number(balanceDue).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <div className="text-xs text-gray-700 font-medium mb-1">Total Fee</div>
-                    <div className="text-base font-semibold text-gray-800">₦{totalFee.toLocaleString()}</div>
+                    <div className="text-base font-semibold text-gray-800">
+                      ₦{Number(totalFee).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
                   </div>
                   <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                     <div className="text-xs text-green-700 font-medium mb-1">Amount Paid</div>
-                    <div className="text-base font-semibold text-green-700">₦{amountPaid.toLocaleString()}</div>
+                    <div className="text-base font-semibold text-green-700">
+                      ₦{Number(amountPaid).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
                   </div>
                 </div>
               </Section>
@@ -3236,11 +3258,44 @@ const InfoRow = ({ label, value, fullWidth = false }) => (
                       disabled={editLoading}
                     >
                       <option value="">Select State</option>
-                      {/* Add Nigerian states options */}
+                      <option value="">Select State</option>
                       <option value="abia">Abia</option>
                       <option value="adamawa">Adamawa</option>
                       <option value="akwa_ibom">Akwa Ibom</option>
-                      {/* Add all 36 states + FCT */}
+                      <option value="anambra">Anambra</option>
+                      <option value="bauchi">Bauchi</option>
+                      <option value="bayelsa">Bayelsa</option>
+                      <option value="benue">Benue</option>
+                      <option value="borno">Borno</option>
+                      <option value="cross_river">Cross River</option>
+                      <option value="delta">Delta</option>
+                      <option value="ebonyi">Ebonyi</option>
+                      <option value="edo">Edo</option>
+                      <option value="ekiti">Ekiti</option>
+                      <option value="enugu">Enugu</option>
+                      <option value="gombe">Gombe</option>
+                      <option value="imo">Imo</option>
+                      <option value="jigawa">Jigawa</option>
+                      <option value="kaduna">Kaduna</option>
+                      <option value="kano">Kano</option>
+                      <option value="katsina">Katsina</option>
+                      <option value="kebbi">Kebbi</option>
+                      <option value="kogi">Kogi</option>
+                      <option value="kwara">Kwara</option>
+                      <option value="lagos">Lagos</option>
+                      <option value="nasarawa">Nasarawa</option>
+                      <option value="niger">Niger</option>
+                      <option value="ogun">Ogun</option>
+                      <option value="ondo">Ondo</option>
+                      <option value="osun">Osun</option>
+                      <option value="oyo">Oyo</option>
+                      <option value="plateau">Plateau</option>
+                      <option value="rivers">Rivers</option>
+                      <option value="sokoto">Sokoto</option>
+                      <option value="taraba">Taraba</option>
+                      <option value="yobe">Yobe</option>
+                      <option value="zamfara">Zamfara</option>
+                      <option value="fct">Federal Capital Territory (FCT)</option>
                     </select>
                   </div>
                   

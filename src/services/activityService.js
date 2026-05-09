@@ -11,24 +11,32 @@ import { get, post } from './api';
  * @param {string} activityType - Filter by activity type
  * @returns {Promise<Array>} - Recent activities
  */
-export const getRecentActivities = async (limit = 10, activityType = null) => {
+export const getRecentActivities = async (limit = 10) => {
   try {
-    let url = '/auth/activities/recent/';
-    const params = new URLSearchParams();
-    
-    if (limit) params.append('limit', limit);
-    if (activityType) params.append('activity_type', activityType);
-    
-    const queryString = params.toString();
-    if (queryString) url += `?${queryString}`;
-    
-    const response = await get(url);
-    return response.data || response || [];
+    const response = await get(`/auth/activities/recent/?limit=${limit}`);
+
+    // api.js unwraps response, so response IS the data object
+    if (response?.activities && Array.isArray(response.activities)) {
+      return response.activities;
+    }
+    if (response?.results && Array.isArray(response.results)) {
+      return response.results;
+    }
+    if (Array.isArray(response)) {
+      return response;
+    }
+    // fallback: nested under .data
+    if (response?.data?.activities && Array.isArray(response.data.activities)) {
+      return response.data.activities;
+    }
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+
+    return [];
   } catch (error) {
-    console.warn('Could not fetch recent activities, using fallback:', error);
-    
-    // Fallback to local storage activities
-    return getLocalActivities(limit);
+    console.error('Error fetching recent activities:', error);
+    return [];
   }
 };
 
