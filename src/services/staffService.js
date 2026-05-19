@@ -1,795 +1,3 @@
-
-// /**
-//  * Staff Service
-//  * Handles all staff-related API calls
-//  * Updated to match Django URL patterns exactly
-//  */
-
-// import api from './api';
-// import { get, post, put, del } from './api';
-// import { handleApiError } from './api';
-
-// /**
-//  * Get all staff with optional filtering
-//  * @param {Object} filters - Filter options
-//  * @returns {Promise<Array>} - List of staff
-//  */
-// export const getAllStaff = async (filters = {}) => {
-//   try {
-//     // Build query string from filters
-//     const queryParams = new URLSearchParams();
-    
-//     Object.entries(filters).forEach(([key, value]) => {
-//       if (value !== undefined && value !== '') {
-//         queryParams.append(key, value);
-//       }
-//     });
-    
-//     const queryString = queryParams.toString();
-//     const url = queryString ? `/staff/api/?${queryString}` : '/staff/api/';
-    
-//     const response = await get(url);
-//     return response;
-//   } catch (error) {
-//     console.error('Error fetching staff:', error);
-//     throw handleApiError(error);
-//   }
-// };
-
-
-// /**
-//  * Get single staff member by ID
-//  * @param {number|string} id - Staff ID or staff_id
-//  * @returns {Promise<Object>} - Staff details
-//  */
-// export const getStaffById = async (id) => {
-//   try {
-//     const response = await get(`/staff/${id}/`);
-//     return response;
-//   } catch (error) {
-//     console.error(`Error fetching staff ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// export const searchStaff = async (searchTerm, filters = {}) => {
-//   try {
-//     const params = {
-//       search: searchTerm,
-//       ...filters
-//     };
-    
-//     const queryParams = new URLSearchParams();
-    
-//     Object.entries(params).forEach(([key, value]) => {
-//       if (value !== undefined && value !== '') {
-//         queryParams.append(key, value);
-//       }
-//     });
-    
-//     const queryString = queryParams.toString();
-//     const url = queryString ? `/staff/api/?${queryString}` : '/staff/api/';
-    
-//     const response = await get(url);
-//     return response;
-    
-//   } catch (error) {
-//     console.error('❌ Search error:', error);
-//     return { results: [], count: 0 };
-//   }
-// };
-
-
-// /**
-//  * Create new staff member
-//  * @param {Object} staffData - Staff data including user_id
-//  * @returns {Promise<Object>} - Created staff
-//  */
-// // export const createStaff = async (staffData) => {
-// //   try {
-// //     // Check if we need to send files separately
-// //     const hasFiles = staffData.files && Object.keys(staffData.files).some(key => staffData.files[key]);
-    
-// //     if (hasFiles) {
-// //       // Create FormData for file upload
-// //       const formData = new FormData();
-      
-// //       // Add all staff data fields
-// //       Object.entries(staffData).forEach(([key, value]) => {
-// //         if (key === 'files') {
-// //           // Add files individually
-// //           Object.entries(value).forEach(([fileKey, file]) => {
-// //             if (file) {
-// //               formData.append(fileKey, file);
-// //             }
-// //           });
-// //         } else if (value !== null && value !== undefined) {
-// //           // Convert other values to string
-// //           formData.append(key, String(value));
-// //         }
-// //       });
-      
-// //       const response = await post('/staff/create/', formData, {
-// //         headers: {
-// //           'Content-Type': 'multipart/form-data',
-// //         },
-// //       });
-// //       return response;
-// //     } else {
-// //       // No files, send as JSON
-// //       const response = await post('/staff/create/', staffData);
-// //       return response;
-// //     }
-// //   } catch (error) {
-// //     console.error('Error creating staff:', error);
-// //     throw handleApiError(error);
-// //   }
-// // };
-
-// // staffService.js - Update the createStaff function
-
-// export const createStaff = async (staffData) => {
-//   try {
-//     console.log('👔 Creating staff profile...');
-    
-//     // Extract user_id and files from staffData
-//     const { user_id, files, ...staffDataWithoutFiles } = staffData;
-    
-//     if (!user_id) {
-//       throw new Error('User ID is required to create staff profile');
-//     }
-    
-//     // Create FormData
-//     const formData = new FormData();
-    
-//     // CRITICAL: Add user_id as FormData field
-//     formData.append('user_id', user_id.toString());
-    
-//     // Add all staff data
-//     Object.entries(staffDataWithoutFiles).forEach(([key, value]) => {
-//       if (value !== null && value !== undefined && value !== '') {
-//         // Handle special cases
-//         if (key === 'year_of_graduation' && value) {
-//           formData.append(key, parseInt(value) || '');
-//         } else if (typeof value === 'boolean') {
-//           formData.append(key, value.toString());
-//         } else if (typeof value === 'number') {
-//           formData.append(key, value.toString());
-//         } else {
-//           formData.append(key, typeof value === 'string' ? value.trim() : value);
-//         }
-//       }
-//     });
-    
-//     // Add files if they exist
-//     if (files && typeof files === 'object') {
-//       Object.entries(files).forEach(([key, file]) => {
-//         if (file && file instanceof File) {
-//           formData.append(key, file);
-//         }
-//       });
-//     }
-    
-//     // Log FormData for debugging
-//     console.log('🔍 Staff FormData contents:');
-//     for (let [key, value] of formData.entries()) {
-//       console.log(`  ${key}:`, value);
-//     }
-    
-//     // FIXED: Use the imported 'post' function
-//     const response = await post('/staff/create/', formData, {
-//       headers: {
-//         'Content-Type': 'multipart/form-data',
-//       },
-//     });
-    
-//     console.log('✅ Staff profile created successfully:', response);
-//     return response;
-    
-//   } catch (error) {
-//     console.error('❌ Staff profile creation error:', error);
-    
-//     let errorMessage = 'Failed to create staff profile';
-    
-//     if (error.response?.data) {
-//       const errorData = error.response.data;
-//       console.error('📋 Backend error details:', errorData);
-      
-//       if (errorData.user_id && errorData.user_id.includes("already a staff member")) {
-//         errorMessage = 'This user already has a staff profile. Please use a different user account.';
-//       } else if (errorData.errors) {
-//         errorMessage = 'Validation errors:\n';
-//         Object.entries(errorData.errors).forEach(([field, errors]) => {
-//           if (Array.isArray(errors)) {
-//             errors.forEach(err => {
-//               errorMessage += `• ${field}: ${err}\n`;
-//             });
-//           } else if (typeof errors === 'string') {
-//             errorMessage += `• ${field}: ${errors}\n`;
-//           }
-//         });
-//       } else if (errorData.detail) {
-//         errorMessage = errorData.detail;
-//       } else if (errorData.error) {
-//         errorMessage = errorData.error;
-//       }
-//     }
-    
-//     throw new Error(errorMessage.trim());
-//   }
-// };
-
-
-// export const updateStaff = async (id, data) => {
-//   try {
-//     console.log(`🔄 UPDATING STAFF ${id}...`);
-    
-//     const formData = new FormData();
-    
-//     // Add all fields
-//     Object.entries(data).forEach(([key, value]) => {
-//       if (value !== null && value !== undefined) {
-//         if (value instanceof File) {
-//           formData.append(key, value);
-//         } else if (typeof value === 'boolean') {
-//           formData.append(key, value.toString());
-//         } else if (value === '') {
-//           formData.append(key, '');
-//         } else if (value instanceof Date) {
-//           formData.append(key, value.toISOString().split('T')[0]);
-//         } else {
-//           formData.append(key, typeof value === 'string' ? value.trim() : value);
-//         }
-//       }
-//     });
-    
-//     console.log('📤 FormData prepared, sending to backend...');
-    
-//     // Try primary endpoint
-//     try {
-//       const response = await put(`/staff/api/${id}/`, formData, {
-//         headers: {
-//           'Content-Type': 'multipart/form-data',
-//         },
-//       });
-//       console.log('✅ Updated via /staff/api/${id}/');
-//       return response;
-//     } catch (firstError) {
-//       console.log('⚠️ Primary endpoint failed, trying /staff/${id}/update/');
-      
-//       // Try alternative endpoint
-//       const response = await put(`/staff/${id}/update/`, formData, {
-//         headers: {
-//           'Content-Type': 'multipart/form-data',
-//         },
-//       });
-//       console.log('✅ Updated via /staff/${id}/update/');
-//       return response;
-//     }
-    
-//   } catch (error) {
-//     console.error(`❌ All update endpoints failed for staff ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Delete staff member
-//  * @param {number} id - Staff ID
-//  * @returns {Promise<Object>} - Success message
-//  */
-
-// /**
-//  * Activate staff member
-//  * @param {number} id - Staff ID
-//  * @param {Object} activationData - Activation data (optional)
-//  * @returns {Promise<Object>} - Updated staff
-//  */
-// export const activateStaff = async (id, activationData = {}) => {
-//   try {
-//     const response = await post(`/staff/${id}/activate/`, activationData);
-//     return response;
-//   } catch (error) {
-//     console.error(`Error activating staff ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Deactivate staff member
-//  * @param {number} id - Staff ID
-//  * @param {Object} deactivationData - Deactivation data (optional)
-//  * @returns {Promise<Object>} - Updated staff
-//  */
-// export const deactivateStaff = async (id, deactivationData = {}) => {
-//   try {
-//     const response = await post(`/staff/${id}/deactivate/`, deactivationData);
-//     return response;
-//   } catch (error) {
-//     console.error(`Error deactivating staff ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Update staff salary
-//  * @param {number} id - Staff ID
-//  * @param {Object} salaryData - Salary data
-//  * @returns {Promise<Object>} - Updated staff
-//  */
-// export const updateStaffSalary = async (id, salaryData) => {
-//   try {
-//     const response = await post(`/staff/${id}/update-salary/`, salaryData);
-//     return response;
-//   } catch (error) {
-//     console.error(`Error updating salary for staff ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// export const updateStaffPassword = async (id, passwordData) => {
-//   try {
-//     console.log(`🔐 Updating password for staff ${id}...`);
-    
-//     const response = await post(`/staff/api/${id}/update-password/`, passwordData);
-    
-//     console.log('✅ Password updated:', response);
-//     return response;
-    
-//   } catch (error) {
-//     console.error(`❌ Password update error for staff ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// export const deleteStaff = async (id) => {
-//   try {
-//     console.log(`🗑️ Deleting staff ${id}...`);
-    
-//     const response = await del(`/staff/api/${id}/delete/`);
-    
-//     console.log('✅ Staff deleted:', response);
-//     return response;
-    
-//   } catch (error) {
-//     console.error(`❌ Error deleting staff ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-
-
-// /**
-//  * Get staff salary
-//  * @param {number} id - Staff ID
-//  * @returns {Promise<Object>} - Salary information
-//  */
-// export const getStaffSalary = async (id) => {
-//   try {
-//     const response = await get(`/staff/${id}/salary/`);
-//     return response;
-//   } catch (error) {
-//     console.error(`Error fetching salary for staff ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Get staff permissions
-//  * @param {number} id - Staff ID
-//  * @returns {Promise<Object>} - Permissions
-//  */
-// export const getStaffPermissions = async (id) => {
-//   try {
-//     const response = await get(`/staff/${id}/permissions/`);
-//     return response;
-//   } catch (error) {
-//     console.error(`Error fetching permissions for staff ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Update staff permissions
-//  * @param {number} id - Staff ID
-//  * @param {Object} permissionsData - Permissions data
-//  * @returns {Promise<Object>} - Updated permissions
-//  */
-// export const updateStaffPermissions = async (id, permissionsData) => {
-//   try {
-//     const response = await put(`/staff/${id}/permissions/update/`, permissionsData);
-//     return response;
-//   } catch (error) {
-//     console.error(`Error updating permissions for staff ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Get all teachers
-//  * @param {Object} filters - Filter options
-//  * @returns {Promise<Array>} - List of teachers
-//  */
-// export const getAllTeachers = async (filters = {}) => {
-//   try {
-//     // Build query string from filters
-//     const queryParams = new URLSearchParams();
-    
-//     Object.entries(filters).forEach(([key, value]) => {
-//       if (value !== undefined && value !== '') {
-//         queryParams.append(key, value);
-//       }
-//     });
-    
-//     const queryString = queryParams.toString();
-//     const url = queryString ? `/staff/teachers/?${queryString}` : '/staff/teachers/';
-    
-//     const response = await get(url);
-//     return response;
-//   } catch (error) {
-//     console.error('Error fetching teachers:', error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Search staff
-//  * @param {Object} searchParams - Search parameters
-//  * @returns {Promise<Array>} - Search results
-//  */
-
-// /**
-//  * Get staff statistics
-//  * @returns {Promise<Object>} - Statistics data
-//  */
-// export const getStaffStatistics = async () => {
-//   try {
-//     const response = await get('/staff/statistics/');
-//     return response;
-//   } catch (error) {
-//     console.error('Error fetching staff statistics:', error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Create teacher profile
-//  * @param {Object} teacherData - Teacher profile data
-//  * @returns {Promise<Object>} - Created teacher profile
-//  */
-// export const createTeacherProfile = async (teacherData) => {
-//   try {
-//     const response = await post('/staff/teachers/create/', teacherData);
-//     return response;
-//   } catch (error) {
-//     console.error('Error creating teacher profile:', error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Update teacher profile
-//  * @param {number} id - Teacher profile ID
-//  * @param {Object} teacherData - Updated teacher data
-//  * @returns {Promise<Object>} - Updated teacher profile
-//  */
-// export const updateTeacherProfile = async (id, teacherData) => {
-//   try {
-//     const response = await put(`/staff/teachers/${id}/`, teacherData);
-//     return response;
-//   } catch (error) {
-//     console.error(`Error updating teacher profile ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Get teacher profile by ID
-//  * @param {number} id - Teacher profile ID
-//  * @returns {Promise<Object>} - Teacher profile details
-//  */
-// export const getTeacherProfileById = async (id) => {
-//   try {
-//     const response = await get(`/staff/teachers/${id}/`);
-//     return response;
-//   } catch (error) {
-//     console.error(`Error fetching teacher profile ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Bulk create staff
-//  * @param {Array} staffList - Array of staff data
-//  * @returns {Promise<Object>} - Created staff
-//  */
-// export const bulkCreateStaff = async (staffList) => {
-//   try {
-//     const response = await post('/staff/bulk-create/', { staff_list: staffList });
-//     return response;
-//   } catch (error) {
-//     console.error('Error bulk creating staff:', error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Get staff dashboard data
-//  * @param {number} id - Staff ID
-//  * @returns {Promise<Object>} - Dashboard data
-//  */
-// export const getStaffDashboard = async (id) => {
-//   try {
-//     const response = await get(`/staff/${id}/dashboard/`);
-//     return response;
-//   } catch (error) {
-//     console.error(`Error fetching staff dashboard ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Retire staff member
-//  * @param {number} id - Staff ID
-//  * @param {Object} retirementData - Retirement data
-//  * @returns {Promise<Object>} - Updated staff
-//  */
-// export const retireStaff = async (id, retirementData) => {
-//   try {
-//     const response = await post(`/staff/${id}/retire/`, retirementData);
-//     return response;
-//   } catch (error) {
-//     console.error(`Error retiring staff ${id}:`, error);
-//     throw handleApiError(error);
-//   }
-// };
-
-// /**
-//  * Check if user already has a staff profile
-//  * @param {number} userId - User ID
-//  * @returns {Promise<boolean>} - True if staff profile exists
-
-// /**
-//  * Get staff by user ID
-//  * @param {number} userId - User ID
-//  * @returns {Promise<Object>} - Staff profile
-//  */
-
-// // In staffService.js, add this function:
-// export const checkStaffExists = async (userId) => {
-//   try {
-//     const response = await get(`/staff/check/${userId}/`);
-//     return response;
-//   } catch (error) {
-//     console.error('Error checking staff existence:', error);
-//     throw handleApiError(error);
-//   }
-// };
- 
-// /**
-//  * Check if user already has staff profile
-//  * @param {number} userId - User ID
-//  * @returns {Promise<Object|null>} - Existing staff or null
-//  */
-
-// export const checkExistingStaff = async (userId) => {
-//   try {
-//     const res = await api.get(`/staff/search/?user_id=${userId}`);
-
-//     const data = Array.isArray(res.data)
-//       ? res.data
-//       : res.data.results || [];
-
-//     return data.length ? data[0] : null;
-//   } catch {
-//     return null;
-//   }
-// };
-
-// /**
-//  * Create or update staff profile
-//  */
-// // export const createOrUpdateStaffProfile = async (userId, staffData) => {
-// //   try {
-// //     console.log('Creating/Updating staff profile...');
-    
-// //     // First check if staff already exists
-// //     const existingStaff = await checkExistingStaff(userId);
-    
-// //     if (existingStaff) {
-// //       console.log('ℹ️ Staff profile already exists, updating...');
-// //       return await updateStaffProfile(existingStaff.id, staffData);
-// //     }
-    
-// //     // If no existing staff, create new one
-// //     console.log('➕ Creating new staff profile...');
-// //     return await createStaff({ user_id: userId, ...staffData });
-    
-// //   } catch (error) {
-// //     console.error('Staff profile creation/update error:', error);
-// //     throw error;
-// //   }
-// // };
-
-// // Add to staffService.js
-
-// export const createOrUpdateStaffProfile = async (userId, staffData) => {
-//   try {
-//     console.log('👔 Creating or updating staff profile...');
-
-//     // Attempt CREATE first (fast path)
-//     try {
-//       return await createStaff({
-//         user_id: userId,
-//         ...staffData,
-//       });
-//     } catch (error) {
-//       const message =
-//         error?.response?.data?.user_id?.[0] ||
-//         error?.response?.data?.detail ||
-//         '';
-
-//       // Backend explicitly says staff already exists → UPDATE
-//       if (
-//         message.toLowerCase().includes('already a staff member')
-//       ) {
-//         console.log('♻️ Staff exists — switching to update flow');
-
-//         const existingStaff = await checkExistingStaff(userId);
-//         if (!existingStaff) {
-//           throw new Error('Staff exists but could not be fetched');
-//         }
-
-//         return await updateStaffProfile(existingStaff.id, staffData);
-//       }
-
-//       throw error; // real error → bubble up
-//     }
-//   } catch (err) {
-//     console.error('❌ Staff create/update failed:', err);
-//     throw err;
-//   }
-// };
-
-// export const saveStaffProfile = async (userId, staffData) => {
-//   try {
-//     console.log('♻️ Saving staff profile (update-only mode)');
-
-//     const existingStaff = await checkExistingStaff(userId);
-
-//     if (!existingStaff) {
-//       throw new Error(
-//         'Staff profile not found. Backend should auto-create staff.'
-//       );
-//     }
-
-//     return await updateStaffProfile(existingStaff.id, staffData);
-//   } catch (error) {
-//     console.error('❌ Staff save failed:', error);
-//     throw error;
-//   }
-// };
-
-
-// /**
-//  * Update existing staff profile
-//  * @param {number} staffId - Staff ID
-//  * @param {Object} staffData - Updated staff data
-//  * @returns {Promise<Object>} - Updated staff
-//  */
-// export const updateStaffProfile = async (staffId, staffData) => {
-//   try {
-//     const formData = new FormData();
-    
-//     // Add all staff data
-//     Object.entries(staffData).forEach(([key, value]) => {
-//       if (value !== null && value !== undefined && value !== '') {
-//         if (key === 'year_of_graduation') {
-//           formData.append(key, parseInt(value) || '');
-//         } else if (typeof value === 'boolean') {
-//           formData.append(key, value.toString());
-//         } else if (typeof value === 'number') {
-//           formData.append(key, value.toString());
-//         } else {
-//           formData.append(key, typeof value === 'string' ? value.trim() : value);
-//         }
-//       }
-//     });
-    
-//     // Add files
-//     if (staffData.files) {
-//       Object.entries(staffData.files).forEach(([key, file]) => {
-//         if (file && file instanceof File) {
-//           formData.append(key, file);
-//         }
-//       });
-//     }
-    
-//     const response = await api.put(`/staff/${staffId}/update/`, formData, {
-//       headers: {
-//         'Content-Type': 'multipart/form-data',
-//       },
-//     });
-    
-//     return response.data;
-//   } catch (error) {
-//     console.error('Error updating staff:', error);
-//     throw error;
-//   }
-// };
-
-// /**
-//  * Get staff by user ID
-//  * @param {number} userId - User ID
-//  * @returns {Promise<Object|null>} - Staff data or null
-//  */
-// export const getStaffByUserId = async (userId) => {
-//   try {
-//     const response = await api.get(`/staff/search/?user_id=${userId}`);
-//     const staffs = response.data.results || response.data || [];
-//     return staffs.length > 0 ? staffs[0] : null;
-//   } catch (error) {
-//     console.error(`Error fetching staff for user ${userId}:`, error);
-//     return null;
-//   }
-// };
-
-// export const saveStaffProfileWithFormData = async (userId, formData) => {
-//   try {
-//     console.log('📤 Uploading staff profile with FormData...');
-    
-//     // Add user_id to FormData if not already present
-//     if (!formData.has('user_id')) {
-//       formData.append('user_id', userId);
-//     }
-    
-//     const response = await api.post('/staff/create-with-files/', formData, {
-//       headers: {
-//         'Content-Type': 'multipart/form-data',
-//       },
-//     });
-    
-//     console.log('✅ Staff profile with files created:', response.data);
-//     return response.data;
-//   } catch (error) {
-//     console.error('❌ Error creating staff profile with files:', error);
-//     throw error;
-//   }
-// };
-
-// // Export all functions
-// const staffService = {
-//   getAllStaff,
-//   getStaffById,
-//   createStaff,
-//   updateStaff,
-//   deleteStaff,
-//   activateStaff,
-//   deactivateStaff,
-//   updateStaffSalary,
-//   getStaffSalary,
-//   getStaffPermissions,
-//   updateStaffPermissions,
-//   getAllTeachers,
-//   searchStaff,
-//   getStaffStatistics,
-//   createTeacherProfile,
-//   updateTeacherProfile,
-//   getTeacherProfileById,
-//   bulkCreateStaff,
-//   getStaffDashboard,
-//   retireStaff,
-//   checkStaffExists,
-//   getStaffByUserId,
-//   createOrUpdateStaffProfile,
-//   checkExistingStaff,
-//   saveStaffProfile,
-//   updateStaffPassword,
-// };
-
-// export default staffService;
-
-
 import api from './api';
 
 // ==========================================
@@ -960,10 +168,11 @@ export const updateStaffPassword = async (staffId, passwordData) => {
     }
     
     console.log('✓ Password validation passed (simple check)');
-    console.log(`📤 Sending POST request to /staff/api/${staffId}/update-password/`);
+    // FIXED: Use update_password (with underscore) not update-password (with hyphen)
+    console.log(`📤 Sending POST request to /staff/api/${staffId}/update_password/`);
     
     const response = await api.post(
-      `/staff/api/${staffId}/update-password/`,
+      `/staff/api/${staffId}/update_password/`,  // FIXED: underscore instead of hyphen
       {
         new_password: passwordData.new_password,
         confirm_password: passwordData.confirm_password
@@ -986,7 +195,6 @@ export const updateStaffPassword = async (staffId, passwordData) => {
       
       // Show EXACT validation errors from backend
       if (errorData.errors) {
-        // Format validation errors
         const errorMessages = [];
         Object.entries(errorData.errors).forEach(([field, messages]) => {
           if (Array.isArray(messages)) {
@@ -1014,7 +222,6 @@ export const updateStaffPassword = async (staffId, passwordData) => {
         console.error(`   String: ${errorData}`);
       }
       
-      // Log the complete error object for debugging
       console.error('📋 Complete error object:', JSON.stringify(errorData, null, 2));
     } else if (error.message) {
       errorMessage = error.message;
@@ -1100,6 +307,382 @@ export const exportStaffData = async (params = {}) => {
   }
 };
 
+/**
+ * Assign staff to multiple classes
+ * @param {number} staffId - Staff ID
+ * @param {Array} classIds - Array of class IDs
+ * @returns {Promise} - API response
+ */
+export const assignStaffToClasses = async (staffId, classIds) => {
+  try {
+    const response = await api.post(`/staff/api/${staffId}/assign_classes/`, {
+      class_ids: classIds
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Remove staff from a specific class
+ * @param {number} staffId - Staff ID
+ * @param {number} classId - Class ID
+ * @returns {Promise} - API response
+ */
+export const removeStaffFromClass = async (staffId, classId) => {
+  try {
+    const response = await api.delete(`/staff/api/${staffId}/remove_from_class/?class_id=${classId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get staff assignments (classes, subjects)
+ * @param {number} staffId - Staff ID
+ * @returns {Promise} - Staff assignments
+ */
+export const getStaffAssignments = async (staffId) => {
+  try {
+    const response = await api.get(`/staff/api/${staffId}/assignments/`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Bulk update staff assignments
+ * @param {number} staffId - Staff ID
+ * @param {Object} assignments - { assigned_class_ids, assistant_class_ids, subject_ids }
+ * @returns {Promise} - API response
+ */
+export const updateStaffAssignments = async (staffId, assignments) => {
+  try {
+    const response = await api.put(`/staff/api/${staffId}/update_assignments/`, assignments);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Get all staff members assigned to a specific class
+ * @param {number} classId - Class ID
+ * @returns {Promise} - List of staff in class
+ */
+export const getStaffByClass = async (classId) => {
+  try {
+    const response = await api.get(`/staff/api/by_class/?class_id=${classId}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// src/services/staffService.js - ADD THESE FUNCTIONS
+
+/**
+ * Archive a staff member (set is_active=False)
+ * @param {number} staffId - Staff ID
+ * @returns {Promise<Object>} - Archive result
+ */
+export const archiveStaff = async (staffId) => {
+  try {
+    console.log(`📦 Archiving staff ${staffId}...`);
+    const response = await api.post(`/staff/api/${staffId}/archive/`);
+    console.log('✅ Staff archived:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`❌ Error archiving staff ${staffId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Restore an archived staff member (set is_active=True)
+ * @param {number} staffId - Staff ID
+ * @returns {Promise<Object>} - Restore result
+ */
+export const restoreStaff = async (staffId) => {
+  try {
+    console.log(`📦 Restoring staff ${staffId}...`);
+    const response = await api.post(`/staff/api/${staffId}/restore/`);
+    console.log('✅ Staff restored:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`❌ Error restoring staff ${staffId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Save staff profile after user creation
+ * @param {number} userId - User ID
+ * @param {Object} staffData - Staff profile data
+ * @returns {Promise<Object>} - Created staff
+ */
+export const saveStaffProfile = async (userId, staffData) => {
+  try {
+    console.log(`🎓 Creating staff profile for user ${userId}...`);
+    
+    const formData = new FormData();
+    formData.append('user_id', userId);
+    
+    // Add all staff data
+    const { files, ...staffDataWithoutFiles } = staffData;
+    
+    Object.entries(staffDataWithoutFiles).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        if (key === 'basic_salary' || key === 'years_of_experience' || key === 'salary_step' || key === 'annual_leave_days' || key === 'sick_leave_days') {
+          formData.append(key, parseFloat(value) || 0);
+        } else {
+          formData.append(key, value);
+        }
+      }
+    });
+    
+    // Add files
+    if (files && typeof files === 'object') {
+      Object.entries(files).forEach(([key, file]) => {
+        if (file && file instanceof File) {
+          formData.append(key, file);
+        }
+      });
+    }
+    
+    const response = await api.post('/staff/api/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error creating staff profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create teacher profile for teaching staff
+ * @param {Object} teacherData - Teacher profile data
+ * @returns {Promise<Object>} - Created teacher profile
+ */
+export const createTeacherProfile = async (teacherData) => {
+  try {
+    const response = await api.post('/staff/teachers/create/', teacherData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating teacher profile:', error);
+    throw error;
+  }
+};
+
+// src/services/staffService.js - ADD/UPDATE THESE FUNCTIONS
+
+/**
+ * Fetch ALL staff (no pagination limit) for export
+ * @returns {Promise<Array>} - All staff in the system
+ */
+export const getAllStaffForExport = async () => {
+  try {
+    console.log('📊 Fetching ALL staff for export...');
+    
+    let allStaff = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    
+    // First, get the first page to know total pages
+    const firstResponse = await getAllStaff({ page: 1, limit: 100 });
+    totalPages = firstResponse.total_pages || 1;
+    allStaff = [...(firstResponse.results || [])];
+    
+    console.log(`📊 Total pages: ${totalPages}, Total staff: ${firstResponse.count || 0}`);
+    
+    // Fetch remaining pages in parallel for better performance
+    if (totalPages > 1) {
+      const remainingPages = [];
+      for (let page = 2; page <= totalPages; page++) {
+        remainingPages.push(getAllStaff({ page: page, limit: 100 }));
+      }
+      
+      const remainingResponses = await Promise.all(remainingPages);
+      
+      remainingResponses.forEach(response => {
+        const staff = response.results || [];
+        allStaff = [...allStaff, ...staff];
+      });
+    }
+    
+    console.log(`✅ Fetched ${allStaff.length} total staff for export`);
+    return allStaff;
+    
+  } catch (error) {
+    console.error('❌ Error fetching all staff:', error);
+    throw error;
+  }
+};
+
+/**
+ * Download all staff as CSV with password hashes
+ * @returns {Promise<Blob>} - CSV file blob
+ */
+export const downloadAllStaffCSV = async () => {
+  try {
+    console.log('📥 Downloading all staff as CSV...');
+    
+    const response = await api.get('/staff/bulk-download/', {
+      responseType: 'blob',
+    });
+    
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = 'staff.csv';
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (filenameMatch) filename = filenameMatch[1];
+    }
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    console.log('✅ Download successful');
+    return { success: true };
+    
+  } catch (error) {
+    console.error('❌ Download error:', error);
+    throw new Error('Failed to download staff data');
+  }
+};
+
+/**
+ * Bulk upload staff from CSV file (with password support)
+ * @param {File} file - CSV file containing staff data
+ * @returns {Promise<Object>} - Upload results
+ */
+export const bulkUploadStaff = async (file) => {
+  try {
+    console.log('📤 Starting bulk upload...');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await api.post('/staff/bulk-upload/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 120000,
+    });
+    
+    console.log('✅ Bulk upload successful:', response.data);
+    return response.data;
+    
+  } catch (error) {
+    console.error('❌ Bulk upload error:', error);
+    
+    let errorMessage = 'Failed to upload staff';
+    
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      if (errorData.error) {
+        errorMessage = errorData.error;
+      } else if (errorData.detail) {
+        errorMessage = errorData.detail;
+      } else if (typeof errorData === 'string') {
+        errorMessage = errorData;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    throw new Error(errorMessage);
+  }
+};
+
+/**
+ * Download CSV template for staff bulk upload
+ */
+export const downloadStaffUploadTemplate = () => {
+  const headers = [
+    'first_name', 'last_name', 'email', 'phone_number', 'password',
+    'gender', 'date_of_birth', 'address', 'city', 'state_of_origin',
+    'lga', 'nationality', 'role', 'department', 'position_title',
+    'employment_type', 'employment_date', 'highest_qualification',
+    'qualification_institution', 'year_of_graduation', 'specialization',
+    'trcn_number', 'blood_group', 'genotype', 'emergency_contact_name',
+    'emergency_contact_phone', 'emergency_contact_relationship',
+    'next_of_kin_name', 'next_of_kin_relationship', 'next_of_kin_phone',
+    'bank_name', 'account_name', 'account_number', 'basic_salary',
+    'salary_scale', 'salary_step', 'annual_leave_days', 'sick_leave_days',
+    'years_of_experience', 'is_active'
+  ];
+  
+  const exampleRow = [
+    'John', 'Doe', 'john.doe@example.com', '08012345678', 'Staff@2024',
+    'male', '1990-01-01', '123 Main St', 'Lagos', 'lagos',
+    'Ikeja', 'Nigerian', 'teacher', 'academic', 'Mathematics Teacher',
+    'full_time', '2024-01-01', 'B.Sc Education', 'University of Lagos',
+    '2015', 'Mathematics', 'TRCN12345', 'O+', 'AA', 'Jane Doe',
+    '08087654321', 'Spouse', 'Mike Doe', 'Brother', '08011223344',
+    'First Bank', 'John Doe', '1234567890', '150000',
+    'CONMESS 6', '1', '21', '10', '5', 'true'
+  ];
+  
+  const csvContent = [headers, exampleRow].map(row => 
+    row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+  ).join('\n');
+  
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `staff_upload_template.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * Validate CSV file before upload
+ * @param {File} file - CSV file to validate
+ * @returns {Object} - Validation result
+ */
+export const validateBulkUploadFile = (file) => {
+  const errors = [];
+  
+  if (!file) {
+    errors.push('No file selected');
+    return { isValid: false, errors };
+  }
+  
+  const fileExtension = file.name.split('.').pop().toLowerCase();
+  if (fileExtension !== 'csv') {
+    errors.push('Invalid file type. Please upload a CSV file.');
+  }
+  
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSize) {
+    errors.push(`File too large. Maximum size is 10MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB.`);
+  }
+  
+  if (file.size === 0) {
+    errors.push('File is empty. Please upload a valid CSV file.');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+
 export default {
   getAllStaff,
   getStaffById,
@@ -1112,5 +695,15 @@ export default {
   deactivateStaff,
   getStaffStatistics,
   getStaffByDepartment,
-  exportStaffData
+  exportStaffData,
+  assignStaffToClasses,
+  removeStaffFromClass,
+  getStaffAssignments,
+  updateStaffAssignments,
+  getStaffByClass,
+  archiveStaff,
+  restoreStaff,
+  bulkUploadStaff,
+  downloadStaffUploadTemplate,
+  getAllStaffForExport,
 };

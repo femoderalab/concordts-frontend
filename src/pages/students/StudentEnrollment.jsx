@@ -5,14 +5,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import DashboardLayout from '../components/dashboard/DashboardLayout';
-import Alert from '../components/common/Alert';
-import Loader, { PageLoader } from '../components/common/Loader';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import useAuth from '../hooks/useAuth';
-import { getStudentById, createStudentEnrollment, getStudentEnrollments } from '../services/studentService';
-import { handleApiError } from '../services/api';
+import DashboardLayout from '../../components/dashboard/DashboardLayout';
+import Alert from '../../components/common/Alert';
+import Loader, { PageLoader } from '../../components/common/Loader';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import useAuth from '../../hooks/useAuth';
+import { getStudentById, createStudentEnrollment, getStudentEnrollments } from '../../services/studentService';
+import { handleApiError } from '../../services/api';
 
 const StudentEnrollment = () => {
   const { id } = useParams();

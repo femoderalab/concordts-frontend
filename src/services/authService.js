@@ -31,18 +31,22 @@ export const register = async (userData) => {
 /**
  * Login user with registration number and password
  */
+// src/services/authService.js - Update login function to handle archived students
+
 export const login = async (credentials) => {
   try {
-    // Ensure proper field names for Django backend
     const loginData = {
       registration_number: credentials.registration_number,
       password: credentials.password
     };
     
-    // Call login endpoint - matches /api/auth/login/
     const response = await post('/auth/login/', loginData);
     
-    // Save authentication data to localStorage
+    // Check if user is archived (is_active = false)
+    if (response.user && response.user.is_active === false) {
+      throw new Error('Your account has been archived. Please contact the school administration to restore access.');
+    }
+    
     if (response.tokens && response.user) {
       setAuthData({
         tokens: response.tokens,
@@ -52,10 +56,12 @@ export const login = async (credentials) => {
     
     return response;
   } catch (error) {
+    if (error.message && error.message.includes('archived')) {
+      throw new Error('Your account has been archived. Please contact the school administration to restore access.');
+    }
     throw error;
   }
 };
-
 /**
  * Logout user
  */

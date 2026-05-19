@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/dashboard/DashboardLayout';
-import StatCard from '../components/dashboard/StatCard';
 import Alert from '../components/common/Alert';
 import Button from '../components/common/Button';
 import useAuth from '../hooks/useAuth';
@@ -59,14 +58,108 @@ import {
   Target,
   Phone,
   MapPin,
-  Globe
+  Globe,
+  ChevronRight,
+  X
 } from 'lucide-react';
 
+// ============================================
+// DESIGN SYSTEM COMPONENTS
+// ============================================
+
+// Typography (Sora font)
+const Text = ({ variant = 'body', children, className = '' }) => {
+  const variants = {
+    h1: 'text-2xl md:text-3xl font-bold',
+    h2: 'text-xl md:text-2xl font-semibold',
+    h3: 'text-lg md:text-xl font-semibold',
+    h4: 'text-base md:text-lg font-medium',
+    body: 'text-sm md:text-base',
+    small: 'text-xs md:text-sm',
+    caption: 'text-[10px] md:text-xs',
+    tiny: 'text-[9px] md:text-[10px]',
+  };
+  return <div className={`${variants[variant]} text-gray-800 ${className}`}>{children}</div>;
+};
+
+// Card Component
+const Card = ({ children, className = '', hover = false }) => (
+  <div className={`bg-white rounded-2xl shadow-sm ${hover ? 'transition-shadow duration-200 hover:shadow-md' : ''} ${className}`}>
+    {children}
+  </div>
+);
+
+// Stat Card Component
+const DashboardStatCard = ({ title, value, icon: Icon, color, subtitle, onClick }) => (
+  <Card className="p-4 cursor-pointer hover:shadow-md transition-all" onClick={onClick}>
+    <div className="flex items-center justify-between mb-2">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
+        <Icon size={18} className="text-gray-700" />
+      </div>
+      <Text variant="tiny" className="text-gray-400 uppercase">{title}</Text>
+    </div>
+    <Text variant="h3" className="font-bold text-gray-900">{value}</Text>
+    {subtitle && <Text variant="tiny" className="text-gray-400 mt-1">{subtitle}</Text>}
+  </Card>
+);
+
+// Activity Item Component
+const ActivityItem = ({ activity, getActivityIcon, formatTimeAgo, onClick }) => (
+  <div 
+    className="flex items-start py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors cursor-pointer px-3 rounded-xl"
+    onClick={onClick}
+  >
+    <div className="p-2 mr-3 flex-shrink-0">{getActivityIcon(activity.type)}</div>
+    <div className="flex-1 min-w-0">
+      <Text variant="small" className="text-gray-900 mb-0.5">{activity.description}</Text>
+      <div className="flex items-center gap-2 text-[10px] text-gray-400">
+        <span className="font-medium">{activity.user_name}</span>
+        {activity.user_role && <span className="capitalize">• {activity.user_role.replace('_', ' ')}</span>}
+        <span>• {formatTimeAgo(activity.created_at)}</span>
+      </div>
+    </div>
+    <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
+  </div>
+);
+
+// Quick Action Button
+const QuickAction = ({ icon: Icon, label, onClick, color }) => (
+  <button
+    onClick={onClick}
+    className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-200 hover:shadow-md transition-all hover:border-[#D94801]/30 group"
+  >
+    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${color} group-hover:scale-105 transition-transform`}>
+      <Icon size={18} className="text-gray-700" />
+    </div>
+    <Text variant="tiny" className="font-medium text-gray-700">{label}</Text>
+  </button>
+);
+
+// Loading Skeleton
+const LoadingSkeleton = () => (
+  <div className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse">
+          <div className="flex justify-between mb-2"><div className="w-10 h-10 bg-gray-200 rounded-xl"></div><div className="w-16 h-3 bg-gray-200 rounded"></div></div>
+          <div className="h-7 w-20 bg-gray-200 rounded mb-1"></div><div className="h-3 w-24 bg-gray-100 rounded"></div>
+        </div>
+      ))}
+    </div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-4 animate-pulse"><div className="h-5 w-32 bg-gray-200 rounded mb-4"></div>{[1,2,3,4].map(i=><div key={i} className="flex items-center mb-3"><div className="w-8 h-8 bg-gray-200 rounded mr-3"></div><div><div className="h-4 w-40 bg-gray-200 rounded mb-1"></div><div className="h-3 w-24 bg-gray-100 rounded"></div></div></div>)}</div>
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse"><div className="h-5 w-36 bg-gray-200 rounded mb-4"></div><div className="space-y-3">{ [1,2,3,4].map(i=><div key={i} className="h-12 bg-gray-100 rounded"></div>)}</div></div>
+    </div>
+  </div>
+);
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, getUserFullName, isAdmin } = useAuth();
   
-  // State management
   const [stats, setStats] = useState(null);
   const [parentStats, setParentStats] = useState(null);
   const [studentStats, setStudentStats] = useState(null);
@@ -76,7 +169,6 @@ const Dashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
@@ -85,7 +177,6 @@ const Dashboard = () => {
 
       const userRole = user?.role;
       
-      // Fetch data based on user role
       if (userRole === 'parent') {
         const parentData = await getParentDashboardStats();
         setParentStats(parentData);
@@ -96,12 +187,10 @@ const Dashboard = () => {
         const teacherData = await getTeacherDashboardStats();
         setTeacherStats(teacherData);
       } else {
-        // Admin or other staff - get comprehensive stats
         const dashboardData = await getDashboardStats();
         setStats(dashboardData);
       }
 
-      // Fetch recent activities for all users
       const activities = await getRecentActivities(10);
       setRecentActivities(Array.isArray(activities) ? activities : []);
 
@@ -119,37 +208,27 @@ const Dashboard = () => {
     }
   }, [user, navigate]);
 
-  // Initial data fetch
   useEffect(() => {
     fetchDashboardData();
-    
-    // Refresh data every 5 minutes
     const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchDashboardData]);
 
-  // Handle refresh
-  const handleRefresh = () => {
-    fetchDashboardData();
-  };
-
-  // Get activity icon based on type
   const getActivityIcon = (activityType) => {
     const icons = {
-      'user_created': <UserPlus size={16} className="text-blue-500" />,
-      'user_updated': <UserCog size={16} className="text-emerald-500" />,
-      'student_created': <GraduationCap size={16} className="text-indigo-500" />,
-      'student_updated': <UserCog size={16} className="text-amber-500" />,
-      'result_published': <FileText size={16} className="text-purple-500" />,
-      'fee_paid': <CreditCard size={16} className="text-green-500" />,
-      'staff_added': <Briefcase size={16} className="text-orange-500" />,
-      'announcement': <Bell size={16} className="text-red-500" />,
-      'system': <Server size={16} className="text-gray-600" />
+      'user_created': <UserPlus size={14} className="text-blue-500" />,
+      'user_updated': <UserCog size={14} className="text-emerald-500" />,
+      'student_created': <GraduationCap size={14} className="text-indigo-500" />,
+      'student_updated': <UserCog size={14} className="text-amber-500" />,
+      'result_published': <FileText size={14} className="text-purple-500" />,
+      'fee_paid': <CreditCard size={14} className="text-green-500" />,
+      'staff_added': <Briefcase size={14} className="text-orange-500" />,
+      'announcement': <Bell size={14} className="text-red-500" />,
+      'system': <Server size={14} className="text-gray-500" />
     };
-    return icons[activityType] || <Activity size={16} className="text-gray-500" />;
+    return icons[activityType] || <Activity size={14} className="text-gray-400" />;
   };
 
-  // Format time ago
   const formatTimeAgo = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -161,744 +240,171 @@ const Dashboard = () => {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric' 
-    });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Render loading skeleton
-  const renderLoadingSkeleton = () => (
-    <div className="animate-pulse">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white rounded-lg border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="h-8 w-8 bg-gray-200 rounded"></div>
-              <div className="h-4 w-16 bg-gray-200 rounded"></div>
-            </div>
-            <div className="h-8 w-20 bg-gray-200 rounded mb-2"></div>
-            <div className="h-3 w-28 bg-gray-100 rounded"></div>
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-6">
-          <div className="h-6 w-40 bg-gray-200 rounded mb-6"></div>
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex items-center mb-4">
-              <div className="h-8 w-8 bg-gray-200 rounded mr-3"></div>
-              <div className="flex-1">
-                <div className="h-4 w-40 bg-gray-200 rounded mb-2"></div>
-                <div className="h-3 w-28 bg-gray-100 rounded"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="h-6 w-32 bg-gray-200 rounded mb-6"></div>
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-14 bg-gray-100 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const handleRefresh = () => fetchDashboardData();
 
-  // Render parent dashboard
+  // Parent Dashboard
   if (user?.role === 'parent') {
     return (
       <DashboardLayout title="Dashboard">
-        {/* Error Alert */}
-        {error && (
-          <Alert
-            type="error"
-            message={error}
-            onClose={() => setError('')}
-            className="mb-6"
-          />
-        )}
+        <div className="space-y-4 pb-10 px-3 sm:px-4 lg:px-6">
+          {error && <Alert type="error" message={error} onClose={() => setError('')} />}
+          
+          {loading ? <LoadingSkeleton /> : parentStats && (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <DashboardStatCard title="Children" value={parentStats.children_count || 0} icon={Users2} color="bg-blue-100" onClick={() => navigate('/parents/children')} />
+                <DashboardStatCard title="Fee Balance" value={`₦${(parentStats.total_balance || 0).toLocaleString()}`} icon={CreditCard} color="bg-amber-100" onClick={() => navigate('/finance')} />
+                <DashboardStatCard title="Attendance" value={`${parentStats.attendance_rate || 0}%`} icon={UserCheck} color="bg-emerald-100" onClick={() => navigate('/attendance')} />
+                <DashboardStatCard title="Messages" value={parentStats.unread_messages || 0} icon={MessageSquare} color="bg-indigo-100" onClick={() => navigate('/messages')} />
+              </div>
 
-        {/* Parent Statistics */}
-        {loading ? renderLoadingSkeleton() : parentStats && (
-          <div className="space-y-6">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 bg-blue-50 rounded">
-                    <Users2 size={20} className="text-blue-600" />
-                  </div>
-                  <div className="text-sm text-gray-500">Children</div>
-                </div>
-                <div className="text-2xl font-semibold text-gray-900">{parentStats.children_count || 0}</div>
-                <div className="text-xs text-gray-500 mt-1">Total children enrolled</div>
-              </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 bg-amber-50 rounded">
-                    <CreditCard size={20} className="text-amber-600" />
-                  </div>
-                  <div className="text-sm text-gray-500">Fee Balance</div>
-                </div>
-                <div className="text-2xl font-semibold text-gray-900">
-                  ₦{(parentStats.total_balance || 0).toLocaleString()}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">Total amount due</div>
-              </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 bg-emerald-50 rounded">
-                    <UserCheck size={20} className="text-emerald-600" />
-                  </div>
-                  <div className="text-sm text-gray-500">Attendance</div>
-                </div>
-                <div className="text-2xl font-semibold text-gray-900">{parentStats.attendance_rate || 0}%</div>
-                <div className="text-xs text-gray-500 mt-1">Average attendance</div>
-              </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 bg-indigo-50 rounded">
-                    <MessageSquare size={20} className="text-indigo-600" />
-                  </div>
-                  <div className="text-sm text-gray-500">Messages</div>
-                </div>
-                <div className="text-2xl font-semibold text-gray-900">{parentStats.unread_messages || 0}</div>
-                <div className="text-xs text-gray-500 mt-1">Unread messages</div>
-              </div>
-            </div>
-
-            {/* Children List */}
-            {parentStats.children && parentStats.children.length > 0 && (
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">My Children</h3>
-                    <p className="text-sm text-gray-500 mt-1">Your enrolled children</p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate('/parents/children')}
-                  >
-                    View All
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {parentStats.children.map((child) => (
-                    <div 
-                      key={child.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-all cursor-pointer hover:border-indigo-200"
-                      onClick={() => navigate(`/students/${child.id}`)}
-                    >
-                      <div className="flex items-center">
-                        <div className="p-2 bg-indigo-50 rounded mr-3">
-                          <GraduationCap size={18} className="text-indigo-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">
-                            {child.first_name} {child.last_name}
-                          </h4>
-                          <p className="text-sm text-gray-600">{child.class_level || 'Not assigned'}</p>
-                          <p className="text-xs text-gray-500 mt-1">Admission: {child.admission_number}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Recent Updates */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Recent Updates</h3>
-                  <p className="text-sm text-gray-500 mt-1">Latest school announcements</p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/notifications')}
-                >
-                  View All
-                </Button>
-              </div>
-              
-              {recentActivities.length > 0 ? (
-                <div className="space-y-4">
-                  {recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-start py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
-                      <div className="p-2 mr-3">
-                        {getActivityIcon(activity.type)}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-gray-900 mb-1">{activity.description}</p>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <span className="font-medium">{activity.user_name}</span>
-                          <span className="mx-2">•</span>
-                          <span>{formatTimeAgo(activity.created_at)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="p-3 bg-red-50 rounded-full inline-flex mb-3">
-                    <Bell size={20} className="text-red-500" />
-                  </div>
-                  <p className="text-gray-600">No recent updates</p>
-                  <p className="text-sm text-gray-500 mt-1">School announcements will appear here</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </DashboardLayout>
-    );
-  }
-
-  // Render student dashboard
-  if (user?.role === 'student') {
-    return (
-      <DashboardLayout title="Dashboard">
-        {/* Error Alert */}
-        {error && (
-          <Alert
-            type="error"
-            message={error}
-            onClose={() => setError('')}
-            className="mb-6"
-          />
-        )}
-
-        {/* Student Statistics */}
-        {loading ? renderLoadingSkeleton() : studentStats && (
-          <div className="space-y-6">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 bg-emerald-50 rounded">
-                    <UserCheck size={20} className="text-emerald-600" />
-                  </div>
-                  <div className="text-sm text-gray-500">Attendance</div>
-                </div>
-                <div className="text-2xl font-semibold text-gray-900">{studentStats.attendance_rate || 0}%</div>
-                <div className="text-xs text-gray-500 mt-1">This term</div>
-              </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 bg-amber-50 rounded">
-                    <CreditCard size={20} className="text-amber-600" />
-                  </div>
-                  <div className="text-sm text-gray-500">Fee Balance</div>
-                </div>
-                <div className="text-2xl font-semibold text-gray-900">
-                  ₦{(studentStats.fee_balance || 0).toLocaleString()}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">Amount due</div>
-              </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 bg-blue-50 rounded">
-                    <School size={20} className="text-blue-600" />
-                  </div>
-                  <div className="text-sm text-gray-500">Class</div>
-                </div>
-                <div className="text-2xl font-semibold text-gray-900">{studentStats.current_class || 'N/A'}</div>
-                <div className="text-xs text-gray-500 mt-1">Current class level</div>
-              </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 bg-purple-50 rounded">
-                    <FileText size={20} className="text-purple-600" />
-                  </div>
-                  <div className="text-sm text-gray-500">Results</div>
-                </div>
-                <div className="text-2xl font-semibold text-gray-900">
-                  {studentStats.recent_results?.length || 0}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">Published results</div>
-              </div>
-            </div>
-
-            {/* Recent Activities */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Recent Activities</h3>
-                  <p className="text-sm text-gray-500 mt-1">Your latest updates</p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/students/activities')}
-                >
-                  View All
-                </Button>
-              </div>
-              
-              {recentActivities.length > 0 ? (
-                <div className="space-y-4">
-                  {recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-start py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
-                      <div className="p-2 mr-3">
-                        {getActivityIcon(activity.type)}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-gray-900 mb-1">{activity.description}</p>
-                        <div className="text-sm text-gray-500">
-                          {formatTimeAgo(activity.created_at)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="p-3 bg-gray-50 rounded-full inline-flex mb-3">
-                    <Activity size={20} className="text-gray-500" />
-                  </div>
-                  <p className="text-gray-600">No recent activities</p>
-                  <p className="text-sm text-gray-500 mt-1">Your activities will appear here</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </DashboardLayout>
-    );
-  }
-
-  // Render teacher dashboard
-  if (user?.role === 'teacher' || user?.role === 'form_teacher' || user?.role === 'subject_teacher') {
-    return (
-      <DashboardLayout title="Dashboard">
-        {/* Error Alert */}
-        {error && (
-          <Alert
-            type="error"
-            message={error}
-            onClose={() => setError('')}
-            className="mb-6"
-          />
-        )}
-
-        {/* Teacher Statistics */}
-        {loading ? renderLoadingSkeleton() : teacherStats && (
-          <div className="space-y-6">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 bg-blue-50 rounded">
-                    <Users size={20} className="text-blue-600" />
-                  </div>
-                  <div className="text-sm text-gray-500">Students</div>
-                </div>
-                <div className="text-2xl font-semibold text-gray-900">{teacherStats.total_students || 0}</div>
-                <div className="text-xs text-gray-500 mt-1">Assigned students</div>
-              </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 bg-emerald-50 rounded">
-                    <School size={20} className="text-emerald-600" />
-                  </div>
-                  <div className="text-sm text-gray-500">Classes</div>
-                </div>
-                <div className="text-2xl font-semibold text-gray-900">{teacherStats.total_classes || 0}</div>
-                <div className="text-xs text-gray-500 mt-1">Teaching classes</div>
-              </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 bg-purple-50 rounded">
-                    <BookOpen size={20} className="text-purple-600" />
-                  </div>
-                  <div className="text-sm text-gray-500">Subjects</div>
-                </div>
-                <div className="text-2xl font-semibold text-gray-900">{teacherStats.total_subjects || 0}</div>
-                <div className="text-xs text-gray-500 mt-1">Teaching subjects</div>
-              </div>
-              
-              <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2 bg-amber-50 rounded">
-                    <FileText size={20} className="text-amber-600" />
-                  </div>
-                  <div className="text-sm text-gray-500">Pending</div>
-                </div>
-                <div className="text-2xl font-semibold text-gray-900">
-                  {teacherStats.pending_grading?.length || 0}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">Awaiting review</div>
-              </div>
-            </div>
-
-            {/* Recent Activities */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Recent Activities</h3>
-                  <p className="text-sm text-gray-500 mt-1">Your latest updates</p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/teachers/activities')}
-                >
-                  View All
-                </Button>
-              </div>
-              
-              {recentActivities.length > 0 ? (
-                <div className="space-y-4">
-                  {recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-start py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
-                      <div className="p-2 mr-3">
-                        {getActivityIcon(activity.type)}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-gray-900 mb-1">{activity.description}</p>
-                        <div className="text-sm text-gray-500">
-                          {formatTimeAgo(activity.created_at)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="p-3 bg-gray-50 rounded-full inline-flex mb-3">
-                    <Activity size={20} className="text-gray-500" />
-                  </div>
-                  <p className="text-gray-600">No recent activities</p>
-                  <p className="text-sm text-gray-500 mt-1">Your activities will appear here</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </DashboardLayout>
-    );
-  }
-
-  // Admin/Staff Dashboard
-  return (
-    <DashboardLayout >
-      {/* Error Alert */}
-      {error && (
-        <Alert
-          type="error"
-          message={error}
-          onClose={() => setError('')}
-          className="mb-6"
-        />
-      )}
-
-      {/* Loading State */}
-      {loading ? renderLoadingSkeleton() : (
-        <div className="space-y-6">
-          {/* Primary Statistics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-blue-50 rounded">
-                  <Users size={20} className="text-blue-600" />
-                </div>
-                <div className="text-sm text-gray-500">Total Users</div>
-              </div>
-              <div className="text-2xl font-semibold text-gray-900 mb-1">
-                {stats?.totalUsers || 0}
-              </div>
-              <div className="text-xs text-gray-500">All system users</div>
-            </div>
-            
-            <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-emerald-50 rounded">
-                  <GraduationCap size={20} className="text-emerald-600" />
-                </div>
-                <div className="text-sm text-gray-500">Students</div>
-              </div>
-              <div className="text-2xl font-semibold text-gray-900 mb-1">
-                {stats?.totalStudents || 0}
-              </div>
-              <div className="text-xs text-gray-500">Enrolled students</div>
-            </div>
-            
-            <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-purple-50 rounded">
-                  <Users2 size={20} className="text-purple-600" />
-                </div>
-                <div className="text-sm text-gray-500">Parents</div>
-              </div>
-              <div className="text-2xl font-semibold text-gray-900 mb-1">
-                {stats?.totalParents || 0}
-              </div>
-              <div className="text-xs text-gray-500">Registered parents</div>
-            </div>
-            
-            <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-amber-50 rounded">
-                  <Briefcase size={20} className="text-amber-600" />
-                </div>
-                <div className="text-sm text-gray-500">Staff</div>
-              </div>
-              <div className="text-2xl font-semibold text-gray-900 mb-1">
-                {stats?.totalStaff || 0}
-              </div>
-              <div className="text-xs text-gray-500">Teaching & non-teaching</div>
-            </div>
-          </div>
-
-          {/* Secondary Statistics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-indigo-50 rounded">
-                  <FileText size={20} className="text-indigo-600" />
-                </div>
-                <div className="text-sm text-gray-500">Results Published</div>
-              </div>
-              <div className="text-2xl font-semibold text-gray-900 mb-1">
-                {stats?.publishedResults || 0}
-              </div>
-              <div className="text-xs text-gray-500">Of total results</div>
-            </div>
-            
-            <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-blue-50 rounded">
-                  <School size={20} className="text-blue-600" />
-                </div>
-                <div className="text-sm text-gray-500">Classes</div>
-              </div>
-              <div className="text-2xl font-semibold text-gray-900 mb-1">
-                {stats?.totalClasses || 0}
-              </div>
-              <div className="text-xs text-gray-500">Active classes</div>
-            </div>
-            
-            <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-emerald-50 rounded">
-                  <BookOpen size={20} className="text-emerald-600" />
-                </div>
-                <div className="text-sm text-gray-500">Subjects</div>
-              </div>
-              <div className="text-2xl font-semibold text-gray-900 mb-1">
-                {stats?.totalSubjects || 0}
-              </div>
-              <div className="text-xs text-gray-500">Offered subjects</div>
-            </div>
-            
-            <div className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2 bg-green-50 rounded">
-                  <CreditCard size={20} className="text-green-600" />
-                </div>
-                <div className="text-sm text-gray-500">Fee Collection</div>
-              </div>
-              <div className="text-2xl font-semibold text-gray-900 mb-1">
-                {stats?.paymentPercentage || 0}%
-              </div>
-              <div className="text-xs text-gray-500">
-                ₦{Number(stats?.totalAmountPaid || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} collected
-              </div>
-            </div>
-          </div>
-
-          {/* Fee Status and Activities Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Fee Status */}
-            <div className="lg:col-span-1">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Fee Payment Status</h3>
-                    <p className="text-sm text-gray-500 mt-1">Student fee overview</p>
-                  </div>
-                  {/* <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate('/finance/overview')}
-                  >
-                    View Details
-                  </Button> */}
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <div className="flex items-center">
-                      <CheckCircle size={16} className="text-emerald-500 mr-2" />
-                      <span className="text-gray-700">Fully Paid</span>
-                    </div>
-                    <span className="font-medium text-gray-900">{stats?.totalPaidFull || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <div className="flex items-center">
-                      <Clock size={16} className="text-amber-500 mr-2" />
-                      <span className="text-gray-700">Partial</span>
-                    </div>
-                    <span className="font-medium text-gray-900">{stats?.totalPaidPartial || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <div className="flex items-center">
-                      <AlertCircle size={16} className="text-red-500 mr-2" />
-                      <span className="text-gray-700">Not Paid</span>
-                    </div>
-                    <span className="font-medium text-gray-900">{stats?.totalNotPaid || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                    <div className="flex items-center">
-                      <Award size={16} className="text-purple-500 mr-2" />
-                      <span className="text-gray-700">Scholarship</span>
-                    </div>
-                    <span className="font-medium text-gray-900">{stats?.totalScholarship || 0}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Activities */}
-            <div className="lg:col-span-2">
-              <div className="bg-white border border-gray-200 rounded-lg p-6 h-full">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Recent Activities</h3>
-                    <p className="text-sm text-gray-500 mt-1">Latest system updates</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={handleRefresh}
-                      disabled={refreshing}
-                      className="p-2 hover:bg-gray-100 rounded transition-colors"
-                      title="Refresh"
-                    >
-                      <RefreshCw size={16} className={refreshing ? 'animate-spin text-blue-500' : 'text-gray-500 hover:text-blue-500'} />
-                    </button>
-                    {/* <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate('/admin/activities')}
-                    >
-                      View All
-                    </Button> */}
-                  </div>
-                </div>
-                
-                {recentActivities.length > 0 ? (
-                  <div className="space-y-4">
-                    {recentActivities.map((activity) => (
-                      <div 
-                        key={activity.id} 
-                        className="flex items-start py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors cursor-pointer"
-                        onClick={() => {
-                          if (activity.target_type === 'student') {
-                            navigate(`/students/${activity.target_id}`);
-                          } else if (activity.target_type === 'result') {
-                            navigate(`/results/${activity.target_id}`);
-                          }
-                        }}
-                      >
-                        <div className="p-2 mr-3">
-                          {getActivityIcon(activity.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-gray-900 mb-1">{activity.description}</p>
-                          <div className="flex items-center text-sm text-gray-500">
-                            <span className="font-medium">{activity.user_name}</span>
-                            {activity.user_role && (
-                              <>
-                                <span className="mx-2">•</span>
-                                <span className="capitalize">{activity.user_role.replace('_', ' ')}</span>
-                              </>
-                            )}
-                            <span className="mx-2">•</span>
-                            <span>{formatTimeAgo(activity.created_at)}</span>
-                          </div>
-                        </div>
+              {parentStats.children && parentStats.children.length > 0 && (
+                <Card className="p-4">
+                  <div className="flex items-center justify-between mb-4"><Text variant="h4" className="font-bold">My Children</Text><Button variant="outline" size="tiny" onClick={() => navigate('/parents/children')}>View All</Button></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {parentStats.children.map((child) => (
+                      <div key={child.id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl cursor-pointer hover:shadow-md transition-all" onClick={() => navigate(`/students/${child.id}`)}>
+                        <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center"><GraduationCap size={18} className="text-indigo-600" /></div>
+                        <div><Text variant="small" className="font-bold">{child.first_name} {child.last_name}</Text><Text variant="tiny" className="text-gray-500">{child.class_level || 'Not assigned'}</Text></div>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="p-3 bg-gray-50 rounded-full inline-flex mb-3">
-                      <Activity size={20} className="text-gray-500" />
-                    </div>
-                    <p className="text-gray-600">No recent activities</p>
-                    <p className="text-sm text-gray-500 mt-1">System activities will appear here</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+                </Card>
+              )}
 
-          {/* Quick Actions */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <Button
-                variant="outline"
-                className="flex flex-col items-center justify-center p-4 h-auto hover:bg-blue-50 hover:border-blue-200 transition-colors"
-                onClick={() => navigate('/students/create')}
-              >
-                <div className="p-2 bg-blue-50 rounded mb-2">
-                  <UserPlus size={20} className="text-blue-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-900">Add Student</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="flex flex-col items-center justify-center p-4 h-auto hover:bg-purple-50 hover:border-purple-200 transition-colors"
-                onClick={() => navigate('/results/create')}
-              >
-                <div className="p-2 bg-purple-50 rounded mb-2">
-                  <FileText size={20} className="text-purple-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-900">Add Results</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="flex flex-col items-center justify-center p-4 h-auto hover:bg-amber-50 hover:border-amber-200 transition-colors"
-                onClick={() => navigate('/staff/create')}
-              >
-                <div className="p-2 bg-amber-50 rounded mb-2">
-                  <Briefcase size={20} className="text-amber-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-900">Add Staff</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="flex flex-col items-center justify-center p-4 h-auto hover:bg-emerald-50 hover:border-emerald-200 transition-colors"
-                onClick={() => navigate('/parents')}
-              >
-                <div className="p-2 bg-emerald-50 rounded mb-2">
-                  <Users2 size={20} className="text-emerald-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-900">Add Parent</span>
-              </Button>
-            </div>
-          </div>
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-4"><Text variant="h4" className="font-bold">Recent Updates</Text><Button variant="outline" size="tiny" onClick={() => navigate('/notifications')}>View All</Button></div>
+                {recentActivities.length > 0 ? recentActivities.map((activity) => (<ActivityItem key={activity.id} activity={activity} getActivityIcon={getActivityIcon} formatTimeAgo={formatTimeAgo} onClick={() => {}} />)) : <div className="text-center py-8"><Bell size={24} className="mx-auto text-gray-300 mb-2" /><Text variant="caption" className="text-gray-400">No recent updates</Text></div>}
+              </Card>
+            </>
+          )}
         </div>
-      )}
+      </DashboardLayout>
+    );
+  }
+
+  // Student Dashboard
+  if (user?.role === 'student') {
+    return (
+      <DashboardLayout title="Dashboard">
+        <div className="space-y-4 pb-10 px-3 sm:px-4 lg:px-6">
+          {error && <Alert type="error" message={error} onClose={() => setError('')} />}
+          
+          {loading ? <LoadingSkeleton /> : studentStats && (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <DashboardStatCard title="Attendance" value={`${studentStats.attendance_rate || 0}%`} icon={UserCheck} color="bg-emerald-100" onClick={() => navigate('/attendance')} />
+                <DashboardStatCard title="Fee Balance" value={`₦${(studentStats.fee_balance || 0).toLocaleString()}`} icon={CreditCard} color="bg-amber-100" onClick={() => navigate('/finance')} />
+                <DashboardStatCard title="Class" value={studentStats.current_class || 'N/A'} icon={School} color="bg-blue-100" onClick={() => navigate('/classes')} />
+                <DashboardStatCard title="Results" value={studentStats.recent_results?.length || 0} icon={FileText} color="bg-purple-100" onClick={() => navigate('/results')} />
+              </div>
+
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-4"><Text variant="h4" className="font-bold">Recent Activities</Text><Button variant="outline" size="tiny" onClick={() => navigate('/students/activities')}>View All</Button></div>
+                {recentActivities.length > 0 ? recentActivities.map((activity) => (<ActivityItem key={activity.id} activity={activity} getActivityIcon={getActivityIcon} formatTimeAgo={formatTimeAgo} onClick={() => {}} />)) : <div className="text-center py-8"><Activity size={24} className="mx-auto text-gray-300 mb-2" /><Text variant="caption" className="text-gray-400">No recent activities</Text></div>}
+              </Card>
+            </>
+          )}
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Teacher Dashboard
+  if (user?.role === 'teacher' || user?.role === 'form_teacher' || user?.role === 'subject_teacher') {
+    return (
+      <DashboardLayout title="Dashboard">
+        <div className="space-y-4 pb-10 px-3 sm:px-4 lg:px-6">
+          {error && <Alert type="error" message={error} onClose={() => setError('')} />}
+          
+          {loading ? <LoadingSkeleton /> : teacherStats && (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <DashboardStatCard title="Students" value={teacherStats.total_students || 0} icon={Users} color="bg-blue-100" onClick={() => navigate('/students')} />
+                <DashboardStatCard title="Classes" value={teacherStats.total_classes || 0} icon={School} color="bg-emerald-100" onClick={() => navigate('/classes')} />
+                <DashboardStatCard title="Subjects" value={teacherStats.total_subjects || 0} icon={BookOpen} color="bg-purple-100" onClick={() => navigate('/subjects')} />
+                <DashboardStatCard title="Pending" value={teacherStats.pending_grading?.length || 0} icon={FileText} color="bg-amber-100" onClick={() => navigate('/results/pending')} />
+              </div>
+
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-4"><Text variant="h4" className="font-bold">Recent Activities</Text><Button variant="outline" size="tiny" onClick={() => navigate('/teachers/activities')}>View All</Button></div>
+                {recentActivities.length > 0 ? recentActivities.map((activity) => (<ActivityItem key={activity.id} activity={activity} getActivityIcon={getActivityIcon} formatTimeAgo={formatTimeAgo} onClick={() => {}} />)) : <div className="text-center py-8"><Activity size={24} className="mx-auto text-gray-300 mb-2" /><Text variant="caption" className="text-gray-400">No recent activities</Text></div>}
+              </Card>
+            </>
+          )}
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Admin Dashboard
+  return (
+    <DashboardLayout title="Dashboard">
+      <div className="h-[calc(100vh-120px)] flex flex-col px-3 sm:px-4 lg:px-6">
+        
+        {/* STICKY HEADER */}
+        <div className="sticky top-0 z-20 bg-gray-50 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 pt-4 pb-2">
+          
+          {error && <div className="mb-3"><Alert type="error" message={error} onClose={() => setError('')} /></div>}
+        </div>
+
+        {/* SCROLLABLE CONTENT */}
+        <div className="flex-1 overflow-y-auto min-h-0 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 pb-4">
+          {loading ? <LoadingSkeleton /> : stats && (
+            <div className="space-y-4">
+              {/* Primary Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <DashboardStatCard title="Total Users" value={stats?.totalUsers || 0} icon={Users} color="bg-blue-100" onClick={() => navigate('/users')} />
+                <DashboardStatCard title="Students" value={stats?.totalStudents || 0} icon={GraduationCap} color="bg-emerald-100" onClick={() => navigate('/students')} />
+                <DashboardStatCard title="Parents" value={stats?.totalParents || 0} icon={Users2} color="bg-purple-100" onClick={() => navigate('/parents')} />
+                <DashboardStatCard title="Staff" value={stats?.totalStaff || 0} icon={Briefcase} color="bg-amber-100" onClick={() => navigate('/staff')} />
+              </div>
+
+              {/* Secondary Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <DashboardStatCard title="Results Published" value={stats?.publishedResults || 0} icon={FileText} color="bg-indigo-100" subtitle="Of total results" onClick={() => navigate('/results')} />
+                <DashboardStatCard title="Classes" value={stats?.totalClasses || 0} icon={School} color="bg-blue-100" onClick={() => navigate('/academics/classes')} />
+                <DashboardStatCard title="Subjects" value={stats?.totalSubjects || 0} icon={BookOpen} color="bg-emerald-100" onClick={() => navigate('/academics/subjects')} />
+                <DashboardStatCard title="Fee Collection" value={`${stats?.paymentPercentage || 0}%`} icon={CreditCard} color="bg-green-100" subtitle={`₦${Number(stats?.totalAmountPaid || 0).toLocaleString()} collected`} onClick={() => navigate('/finance')} />
+              </div>
+
+              {/* Fee Status and Activities */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <Card className="p-4">
+                  <Text variant="h4" className="font-bold mb-3">Fee Payment Status</Text>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100"><div className="flex items-center gap-2"><CheckCircle size={14} className="text-emerald-500" /><Text variant="caption">Fully Paid</Text></div><Text variant="small" className="font-bold">{stats?.totalPaidFull || 0}</Text></div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100"><div className="flex items-center gap-2"><Clock size={14} className="text-amber-500" /><Text variant="caption">Partial</Text></div><Text variant="small" className="font-bold">{stats?.totalPaidPartial || 0}</Text></div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100"><div className="flex items-center gap-2"><AlertCircle size={14} className="text-red-500" /><Text variant="caption">Not Paid</Text></div><Text variant="small" className="font-bold">{stats?.totalNotPaid || 0}</Text></div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100"><div className="flex items-center gap-2"><Award size={14} className="text-purple-500" /><Text variant="caption">Scholarship</Text></div><Text variant="small" className="font-bold">{stats?.totalScholarship || 0}</Text></div>
+                  </div>
+                </Card>
+
+                <div className="lg:col-span-2">
+                  <Card className="p-4 h-full">
+                    <div className="flex items-center justify-between mb-3"><Text variant="h4" className="font-bold">Recent Activities</Text><button onClick={handleRefresh} disabled={refreshing} className="p-1 hover:bg-gray-100 rounded-lg"><RefreshCw size={14} className={refreshing ? 'animate-spin text-[#D94801]' : 'text-gray-400'} /></button></div>
+                    {recentActivities.length > 0 ? recentActivities.map((activity) => (<ActivityItem key={activity.id} activity={activity} getActivityIcon={getActivityIcon} formatTimeAgo={formatTimeAgo} onClick={() => { if (activity.target_type === 'student') navigate(`/students/${activity.target_id}`); else if (activity.target_type === 'result') navigate(`/results/${activity.target_id}`); }} />)) : <div className="text-center py-8"><Activity size={24} className="mx-auto text-gray-300 mb-2" /><Text variant="caption" className="text-gray-400">No recent activities</Text></div>}
+                  </Card>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <Card className="p-4">
+                <Text variant="h4" className="font-bold mb-4">Quick Actions</Text>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <QuickAction icon={UserPlus} label="Add Student" onClick={() => navigate('/students/create')} color="bg-blue-100" />
+                  <QuickAction icon={FileText} label="Add Results" onClick={() => navigate('/results/create')} color="bg-purple-100" />
+                  <QuickAction icon={Briefcase} label="Add Staff" onClick={() => navigate('/staff/create')} color="bg-amber-100" />
+                  <QuickAction icon={Users2} label="Add Parent" onClick={() => navigate('/parents')} color="bg-emerald-100" />
+                </div>
+              </Card>
+            </div>
+          )}
+        </div>
+      </div>
     </DashboardLayout>
   );
 };

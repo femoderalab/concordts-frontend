@@ -13,7 +13,8 @@ import ProtectedRoute, {
   AdminRoute,
   TeacherRoute,
   ParentRoute,
-} from './utils/protectedRoute'; 
+  StaffRoute,
+} from './utils/protectedRoute';
 
 // Layout Components
 import DashboardLayout from './components/dashboard/DashboardLayout';
@@ -22,6 +23,38 @@ import { PageLoader } from './components/common/Loader';
 
 // Import StudentLayout
 import StudentLayout from './components/layout/StudentLayout';
+import PromotionManagement from './pages/academics/PromotionManagement';
+import AlumniManagement from './pages/academics/AlumniManagement';
+import ClassManagement from './pages/academics/ClassManagement';
+import LibraryManagement from './pages/library/LibraryManagement';
+
+// NEW PARENT PAGES (modular structure - NO lazy loading needed)
+import Parents from './pages/parents/Parents';
+import ParentCreate from './pages/parents/ParentCreate';
+import ParentEdit from './pages/parents/ParentEdit';
+import ParentDetail from './pages/parents/ParentDetail';
+import ParentPortal from './pages/parents/ParentPortal';
+
+import StudentPaymentPortal from './pages/payments/StudentPaymentPortal';
+import FeeConfiguration from './pages/payments/FeeConfiguration';
+import PaymentAnalytics from './pages/payments/PaymentAnalytics';
+import BankAccountManagement from './pages/payments/BankAccountManagement';
+import AdminPaymentVerification from './pages/payments/AdminPaymentVerification';
+import InvoiceManagement from './pages/payments/InvoiceManagement';
+import PaymentCallback from './pages/payments/PaymentCallback';
+
+import TeacherDashboard from './pages/teacher/TeacherDashboard';
+import PrincipalDashboard from './pages/principal/PrincipalDashboard';
+import AccountantDashboard from './pages/accountant/AccountantDashboard';
+import SecretaryDashboard from './pages/secretary/SecretaryDashboard';
+
+import TakeAttendance from './pages/attendance/TakeAttendance';
+import ClassTimetable from './pages/timetable/ClassTimetable';
+import TimetableList from './pages/timetable/TimetableList';
+import ClassTimetableDetail from './pages/timetable/ClassTimetableDetail';
+import ManageTimetable from './pages/timetable/ManageTimetable';
+import ManagePeriods from './pages/timetable/ManagePeriods';
+import ManageDays from './pages/timetable/ManageDays';
 
 // Lazy loaded pages for better performance
 const Landing = lazy(() => import('./pages/Landing'));
@@ -30,22 +63,16 @@ const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
-// Student pages
-const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
-const StudentList = lazy(() => import('./pages/StudentList'));
-const StudentDetail = lazy(() => import('./pages/StudentDetail'));
-const StudentCreate = lazy(() => import('./pages/StudentCreate'));
-const StudentEnrollment = lazy(() => import('./pages/StudentEnrollment'));
-const StudentRegister = lazy(() => import('./pages/StudentRegister'));
-
-// Parent pages
-const Parents = lazy(() => import('./pages/Parents'));
-const ParentRegister = lazy(() => import('./pages/ParentRegister'));
-const ParentList = lazy(() => import('./pages/ParentList'));
-const ParentDetail = lazy(() => import('./pages/ParentDetail'));
-const ParentCreate = lazy(() => import('./pages/ParentCreate'));
-const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
-const LinkChild = lazy(() => import('./pages/LinkChild'));
+// =====================
+// STUDENT PAGES - UPDATED PATHS to use students folder
+// =====================
+const StudentDashboard = lazy(() => import('./pages/students/StudentDashboard'));
+const StudentList = lazy(() => import('./pages/students/StudentList'));
+const StudentDetail = lazy(() => import('./pages/students/StudentDetail'));
+const StudentCreate = lazy(() => import('./pages/students/StudentCreate'));
+const StudentEdit = lazy(() => import('./pages/students/StudentEdit'));
+const StudentEnrollment = lazy(() => import('./pages/students/StudentEnrollment'));
+const StudentRegister = lazy(() => import('./pages/students/StudentRegister'));
 
 // Staff pages
 const Staff = lazy(() => import('./pages/staff/staff'));
@@ -59,12 +86,12 @@ const Teachers = lazy(() => import('./pages/staff/Teachers'));
 const Accountant = lazy(() => import('./pages/staff/Accountant'));
 const TeacherProfiles = lazy(() => import('./pages/staff/TeacherProfiles'));
 
-// Academics pages - FIXED IMPORTS
+// Academics pages
 const Academics = lazy(() => import('./pages/Academics'));
 const AcademicYear = lazy(() => import('./pages/academics/AcademicYear'));
 const AcademicSessions = lazy(() => import('./pages/academics/AcademicSessions'));
 const AcademicTerms = lazy(() => import('./pages/academics/AcademicTerms'));
-const AcademicPrograms = lazy(() => import('./pages/academics/Programs')); // Fixed import name
+const AcademicPrograms = lazy(() => import('./pages/academics/Programs'));
 const ClassLevels = lazy(() => import('./pages/academics/ClassLevels'));
 const Subjects = lazy(() => import('./pages/academics/Subjects'));
 const Classes = lazy(() => import('./pages/academics/Classes'));
@@ -85,6 +112,9 @@ const Security = lazy(() => import('./pages/settings/Security'));
 
 // Results
 const Result = lazy(() => import('./pages/reports/Result'));
+
+// Parent Register
+const ParentRegister = lazy(() => import('./pages/ParentRegister'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -120,7 +150,7 @@ function App() {
               path="/login"
               element={
                 <PublicRoute>
-                    <Login />
+                  <Login />
                 </PublicRoute>
               }
             />
@@ -129,7 +159,7 @@ function App() {
               path="/register"
               element={
                 <PublicRoute>
-                    <Register />
+                  <Register />
                 </PublicRoute>
               }
             />
@@ -157,26 +187,17 @@ function App() {
             />
 
             {/* ===================== */}
-            {/* MAIN DASHBOARD - ADMIN ONLY */}
+            {/* DASHBOARD ROUTES */}
             {/* ===================== */}
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute 
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
-                    'accountant',
-                    'secretary',
-                    'librarian',
-                    'laboratory',
-                    'security',
-                    'cleaner'
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher',
+                    'accountant', 'secretary', 'librarian',
+                    'laboratory', 'security', 'cleaner'
                   ]}
                 >
                   <Dashboard />
@@ -184,9 +205,33 @@ function App() {
               }
             />
 
-            {/* ===================== */}
-            {/* STUDENT DASHBOARD - STUDENT ONLY */}
-            {/* ===================== */}
+            <Route
+              path="/teacher-dashboard"
+              element={
+                <TeacherRoute>
+                  <TeacherDashboard />
+                </TeacherRoute>
+              }
+            />
+
+            <Route
+              path="/accountant-dashboard"
+              element={
+                <StaffRoute>
+                  <AccountantDashboard />
+                </StaffRoute>
+              }
+            />
+
+            <Route
+              path="/secretary-dashboard"
+              element={
+                <StaffRoute>
+                  <SecretaryDashboard />
+                </StaffRoute>
+              }
+            />
+
             <Route
               path="/student-dashboard"
               element={
@@ -196,30 +241,20 @@ function App() {
               }
             />
 
-            {/* ===================== */}
-            {/* STUDENT ROUTES (Admin/Teacher Access) */}
-            {/* ===================== */}
             <Route
-              path="/students/:id/dashboard"
+              path="/principal-dashboard"
               element={
-                <ProtectedRoute
-                  allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
-                    'accountant',
-                    'secretary',
-                  ]}
-                >
-                  <StudentDashboard />
-                </ProtectedRoute>
+                <AdminRoute>
+                  <PrincipalDashboard />
+                </AdminRoute>
               }
             />
 
+            {/* ===================== */}
+            {/* STUDENT MANAGEMENT ROUTES - UPDATED */}
+            {/* ===================== */}
+
+            {/* Student List - Admin only */}
             <Route
               path="/students"
               element={
@@ -229,6 +264,7 @@ function App() {
               }
             />
 
+            {/* Create Student - Admin only */}
             <Route
               path="/students/create"
               element={
@@ -238,21 +274,25 @@ function App() {
               }
             />
 
+            {/* Edit Student - Admin only (NEW ROUTE) */}
+            <Route
+              path="/students/:id/edit"
+              element={
+                <AdminRoute>
+                  <StudentEdit />
+                </AdminRoute>
+              }
+            />
+
+            {/* View Student Details - Admin, Teacher, Parent */}
             <Route
               path="/students/:id"
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
-                    'accountant',
-                    'secretary',
-                    'parent',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher',
+                    'accountant', 'secretary', 'parent'
                   ]}
                 >
                   <StudentDetail />
@@ -260,6 +300,7 @@ function App() {
               }
             />
 
+            {/* Student Enrollment - Admin only */}
             <Route
               path="/students/:id/enroll"
               element={
@@ -269,133 +310,68 @@ function App() {
               }
             />
 
-            {/* ===================== */}
-            {/* PARENT ROUTES */}
-            {/* ===================== */}
+            {/* Student Dashboard by ID */}
             <Route
-              path="/parents"
+              path="/students/:id/dashboard"
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
-                    'accountant',
-                    'secretary',
-                    'parent',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher',
+                    'accountant', 'secretary'
                   ]}
                 >
-                  <Parents />
+                  <StudentDashboard />
                 </ProtectedRoute>
               }
             />
 
-            <Route
-              path="/parents/dashboard"
+            {/* ===================== */}
+            {/* PARENT ROUTES */}
+            {/* ===================== */}
+            <Route 
+              path="/parents" 
               element={
-                <ParentRoute>
-                  <ParentDashboard />
-                </ParentRoute>
-              }
+                <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal', 'secretary', 'accountant']}>
+                  <Parents />
+                </ProtectedRoute>
+              } 
             />
 
-            <Route
-              path="/parents/list"
-              element={
-                <AdminRoute>
-                  <ParentList />
-                </AdminRoute>
-              }
-            />
-
-            <Route
-              path="/parents/create"
+            <Route 
+              path="/parents/create" 
               element={
                 <AdminRoute>
                   <ParentCreate />
                 </AdminRoute>
-              }
+              } 
             />
 
-            <Route
-              path="/parents/:id"
+            <Route 
+              path="/parents/:id" 
               element={
-                <ProtectedRoute
-                  allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'secretary',
-                    'parent',
-                  ]}
-                >
+                <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal', 'secretary', 'parent']}>
                   <ParentDetail />
                 </ProtectedRoute>
-              }
+              } 
             />
 
-            <Route
-              path="/parents/:id/update"
-              element={
-                <ProtectedRoute
-                  allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'secretary',
-                    'parent',
-                  ]}
-                >
-                  <ParentDetail editMode={true} />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/parents/link-child"
+            <Route 
+              path="/parents/:id/edit" 
               element={
                 <AdminRoute>
-                  <LinkChild />
+                  <ParentEdit />
                 </AdminRoute>
-              }
+              } 
             />
 
-            <Route
-              path="/parents/children"
+            <Route 
+              path="/parent-portal" 
               element={
-                <ParentRoute>
-                  <DashboardLayout title="My Children">
-                    <div className="bg-white rounded-xl shadow-soft p-6">
-                      <div className="flex items-center justify-between mb-6">
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-800">My Children</h2>
-                          <p className="text-gray-600 mt-1">View and manage your children's information</p>
-                        </div>
-                        <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                          Add Child
-                        </button>
-                      </div>
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0z" />
-                          </svg>
-                        </div>
-                        <p className="text-gray-600">No children linked to your account</p>
-                        <p className="text-sm text-gray-500 mt-2">
-                          Contact the school administration to link your children
-                        </p>
-                      </div>
-                    </div>
-                  </DashboardLayout>
-                </ParentRoute>
-              }
+                <ProtectedRoute allowedRoles={['parent']}>
+                  <ParentPortal />
+                </ProtectedRoute>
+              } 
             />
 
             {/* ===================== */}
@@ -406,12 +382,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'secretary',
-                    'accountant',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'secretary', 'accountant'
                   ]}
                 >
                   <Staff />
@@ -424,15 +396,9 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'secretary',
-                    'accountant',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'secretary', 'accountant', 'teacher',
+                    'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <StaffList />
@@ -454,12 +420,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'secretary',
-                    'accountant',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'secretary', 'accountant'
                   ]}
                 >
                   <StaffDetail />
@@ -480,12 +442,7 @@ function App() {
               path="/staff/principal"
               element={
                 <ProtectedRoute
-                  allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                  ]}
+                  allowedRoles={['head', 'hm', 'principal', 'vice_principal']}
                 >
                   <Principal />
                 </ProtectedRoute>
@@ -496,13 +453,7 @@ function App() {
               path="/staff/secretary"
               element={
                 <ProtectedRoute
-                  allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'secretary',
-                  ]}
+                  allowedRoles={['head', 'hm', 'principal', 'vice_principal', 'secretary']}
                 >
                   <Secretary />
                 </ProtectedRoute>
@@ -514,13 +465,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <Teachers />
@@ -532,13 +478,7 @@ function App() {
               path="/staff/accountant"
               element={
                 <ProtectedRoute
-                  allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'accountant',
-                  ]}
+                  allowedRoles={['head', 'hm', 'principal', 'vice_principal', 'accountant']}
                 >
                   <Accountant />
                 </ProtectedRoute>
@@ -550,13 +490,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <TeacherProfiles />
@@ -572,13 +507,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <Academics />
@@ -591,13 +521,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <AcademicYear />
@@ -610,13 +535,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <AcademicSessions />
@@ -629,13 +549,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <AcademicTerms />
@@ -648,13 +563,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <AcademicPrograms />
@@ -667,13 +577,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <ClassLevels />
@@ -686,13 +591,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <Subjects />
@@ -705,13 +605,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <Classes />
@@ -724,13 +619,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <ClassArms />
@@ -743,16 +633,159 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <Promotions />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/academics/promotion"
+              element={
+                <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal']}>
+                  <PromotionManagement />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/academics/alumni"
+              element={
+                <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal']}>
+                  <AlumniManagement />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/academics/class-management"
+              element={
+                <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal']}>
+                  <ClassManagement />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ===================== */}
+            {/* PAYMENTS ROUTES */}
+            {/* ===================== */}
+            <Route 
+              path="/payments" 
+              element={
+                <ProtectedRoute allowedRoles={[
+                  'student', 'parent', 'head', 'hm',
+                  'principal', 'vice_principal', 'accountant', 'secretary'
+                ]}>
+                  <StudentPaymentPortal />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route
+              path="/payments/admin"
+              element={
+                <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal', 'accountant']}>
+                  <FeeConfiguration />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
+              path="/payments/analytics"
+              element={
+                <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal', 'accountant']}>
+                  <PaymentAnalytics />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/payments/bank-accounts"
+              element={
+                <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal', 'accountant']}>
+                  <BankAccountManagement />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/payments/verification"
+              element={
+                <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal', 'accountant']}>
+                  <AdminPaymentVerification />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="/payments/invoices" element={
+              <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal', 'accountant']}>
+                <InvoiceManagement />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/payments/verify" element={
+              <ProtectedRoute allowedRoles={['student', 'parent']}>
+                <PaymentCallback />
+              </ProtectedRoute>
+            } />
+
+            {/* ===================== */}
+            {/* ATTENDANCE ROUTES */}
+            {/* ===================== */}
+            <Route
+              path="/attendance/take"
+              element={
+                <ProtectedRoute allowedRoles={[
+                  'teacher', 'form_teacher', 'subject_teacher',
+                  'head', 'hm', 'principal', 'vice_principal', 'secretary'
+                ]}>
+                  <TakeAttendance />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ===================== */}
+            {/* TIMETABLE ROUTES */}
+            {/* ===================== */}
+            <Route
+              path="/timetable"
+              element={
+                <ProtectedRoute>
+                  <ClassTimetable />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/timetable/manage"
+              element={
+                <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal', 'secretary']}>
+                  <ManageTimetable />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="/timetable" element={<TimetableList />} />
+            <Route path="/timetable/class/:classId" element={<ClassTimetableDetail />} />
+            <Route path="/timetable/manage" element={<ManageTimetable />} />
+            
+            <Route
+              path="/timetable/periods"
+              element={
+                <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal', 'secretary']}>
+                  <ManagePeriods />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
+              path="/timetable/days"
+              element={
+                <ProtectedRoute allowedRoles={['head', 'hm', 'principal', 'vice_principal', 'secretary']}>
+                  <ManageDays />
                 </ProtectedRoute>
               }
             />
@@ -765,13 +798,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <Reports />
@@ -784,15 +812,9 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
-                    'student',
-                    'parent',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher',
+                    'student', 'parent'
                   ]}
                 >
                   <DashboardLayout title="Result Management">
@@ -809,13 +831,8 @@ function App() {
               element={
                 <ProtectedRoute
                   allowedRoles={[
-                    'head',
-                    'hm',
-                    'principal',
-                    'vice_principal',
-                    'teacher',
-                    'form_teacher',
-                    'subject_teacher',
+                    'head', 'hm', 'principal', 'vice_principal',
+                    'teacher', 'form_teacher', 'subject_teacher'
                   ]}
                 >
                   <Attendance />
@@ -863,6 +880,22 @@ function App() {
                   </DashboardLayout>
                 </ProtectedRoute>
               }
+            />
+
+            {/* ===================== */}
+            {/* LIBRARY ROUTE */}
+            {/* ===================== */}
+            <Route 
+              path="/library" 
+              element={
+                <ProtectedRoute allowedRoles={[
+                  'head', 'hm', 'principal', 'vice_principal',
+                  'teacher', 'form_teacher', 'subject_teacher',
+                  'accountant', 'secretary', 'student', 'parent'
+                ]}>
+                  <LibraryManagement />
+                </ProtectedRoute>
+              } 
             />
 
             {/* ===================== */}
@@ -940,7 +973,7 @@ function App() {
             <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
             <Route path="/teacher" element={<Navigate to="/dashboard" replace />} />
             <Route path="/student" element={<Navigate to="/student-dashboard" replace />} />
-            <Route path="/parent" element={<Navigate to="/parents/dashboard" replace />} />
+            <Route path="/parent" element={<Navigate to="/parent-portal" replace />} />
 
             {/* ===================== */}
             {/* 404 - NOT FOUND */}

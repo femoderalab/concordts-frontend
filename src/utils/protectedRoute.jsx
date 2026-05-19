@@ -68,25 +68,52 @@ const PERMISSIONS = {
   // Parents
   parent: {
     routes: [
-      '/dashboard',
-      '/parents/dashboard',
-      '/parents',
-      '/parents/:id',
-      '/parents/:id/update',
+      '/parent-portal',
+      '/parent-portal/*',
+      '/library',
+      '/library/*',
+      '/profile',
+      '/settings',
+      '/settings/*',
+      '/payments',           
+      '/payments/*',         
     ],
-    features: ['view_children', 'view_grades', 'view_attendance', 'make_payments'],
+    features: ['view_children', 'view_grades', 'view_attendance', 'make_payments', 'view_library'],
   },
 
   // Students
   student: {
-    routes: ['/student-dashboard', '/profile', '/settings'],
-    features: ['view_grades', 'view_attendance', 'view_schedule'],
+    routes: [
+      '/student-dashboard', 
+      '/profile', 
+      '/settings',
+      '/payments',           
+      '/payments/*',         
+      '/library',            
+      '/library/*'           
+    ],
+    features: ['view_grades', 'view_attendance', 'view_schedule', 'make_payments', 'view_library'],
   },
 
   // Non‑teaching staff
   accountant: {
-    routes: ['/dashboard', '/students', '/parents', '/reports', '/finance'],
-    features: ['manage_fees', 'view_financial_reports', 'process_payments'],
+    routes: [
+      '/dashboard', 
+      '/accountant-dashboard',
+      '/accountant-dashboard/*',
+      '/students', 
+      '/parents', 
+      '/staff',
+      '/staff/*',
+      '/reports', 
+      '/finance',
+      '/payments',
+      '/payments/*',
+      '/library',
+      '/timetable',
+      '/timetable/*'
+    ],
+    features: ['manage_fees', 'view_financial_reports', 'process_payments', 'view_all'],
   },
   secretary: {
     routes: ['/dashboard', '/students', '/parents', '/staff/secretary'],
@@ -389,6 +416,10 @@ export const StaffRoute = ({ children, ...props }) => {
   return (
     <ProtectedRoute
       allowedRoles={[
+        'head',
+        'hm',
+        'principal',
+        'vice_principal',
         'accountant',
         'secretary',
         'librarian',
@@ -406,7 +437,7 @@ export const StaffRoute = ({ children, ...props }) => {
 
 /**
  * Public route wrapper
- * Enhanced with smart redirects
+ * Enhanced with smart redirects - FIXED for parents
  */
 export const PublicRoute = ({
   children,
@@ -432,7 +463,7 @@ export const PublicRoute = ({
     if (user.role === 'student') {
       dashboardPath = '/student-dashboard';
     } else if (user.role === 'parent') {
-      dashboardPath = '/parents/dashboard';
+      dashboardPath = '/parent-portal';  // ✅ FIXED: Redirect parents to parent portal
     }
 
     // Special handling based on verification status

@@ -3,80 +3,179 @@ import api from './api';
 import userService from './userService';
 import { getAccessToken as getToken, getUserData } from '../utils/storage'; // ADD THIS LINE
 
+
+// /**
+//  * Create a user account for student (Step 1)
+//  * @param {Object} userData - User registration data
+//  * @returns {Promise<Object>} - Created user with student role
+//  */
+// export const createStudentUser = async (userData) => {
+//   try {
+//     console.log('👤 Creating student user account...');
+    
+//     // Prepare user data with student role - FIXED: use confirm_password, not password2
+//     const studentUserData = {
+//       first_name: userData.first_name,
+//       last_name: userData.last_name,
+//       role: 'student',
+//       password: userData.password,
+//       confirm_password: userData.confirm_password || userData.password2, // FIX: use confirm_password
+//     };
+    
+//     // Only add optional fields if they have values (not empty strings)
+//     if (userData.email && userData.email.trim() !== '') {
+//       studentUserData.email = userData.email.trim();
+//     }
+//     if (userData.phone_number && userData.phone_number.trim() !== '') {
+//       studentUserData.phone_number = userData.phone_number.trim();
+//     }
+//     if (userData.gender) {
+//       studentUserData.gender = userData.gender;
+//     }
+//     if (userData.date_of_birth) {
+//       studentUserData.date_of_birth = userData.date_of_birth;
+//     }
+//     if (userData.address && userData.address.trim() !== '') {
+//       studentUserData.address = userData.address.trim();
+//     }
+//     if (userData.city && userData.city.trim() !== '') {
+//       studentUserData.city = userData.city.trim();
+//     }
+//     if (userData.state_of_origin) {
+//       studentUserData.state_of_origin = userData.state_of_origin;
+//     }
+//     if (userData.lga && userData.lga.trim() !== '') {
+//       studentUserData.lga = userData.lga.trim();
+//     }
+//     if (userData.nationality) {
+//       studentUserData.nationality = userData.nationality;
+//     }
+    
+//     console.log('📦 User data to send:', studentUserData);
+    
+//     const response = await api.post('/auth/register/', studentUserData);
+    
+//     console.log('✅ User creation response:', response.data);
+    
+//     return response.data;
+    
+//   } catch (error) {
+//     console.error('❌ Error creating student user:', error);
+//     console.error('Error response data:', error.response?.data);
+    
+//     let errorMessage = 'Failed to create user account';
+    
+//     if (error.response?.data) {
+//       const errorData = error.response.data;
+      
+//       if (errorData.errors) {
+//         const errorList = [];
+//         Object.entries(errorData.errors).forEach(([field, errors]) => {
+//           if (Array.isArray(errors)) {
+//             errors.forEach(err => {
+//               errorList.push(`${field}: ${err}`);
+//             });
+//           } else if (typeof errors === 'string') {
+//             errorList.push(`${field}: ${errors}`);
+//           }
+//         });
+//         errorMessage = errorList.join('; ');
+//       } else if (errorData.detail) {
+//         errorMessage = errorData.detail;
+//       } else if (errorData.error) {
+//         errorMessage = errorData.error;
+//       } else if (typeof errorData === 'string') {
+//         errorMessage = errorData;
+//       }
+//     } else if (error.message) {
+//       errorMessage = error.message;
+//     }
+    
+//     throw new Error(errorMessage);
+//   }
+// };
+
 /**
- * Student Service - Comprehensive student creation and management
- * Handles user registration + student profile creation in separate steps
- */
-
-
-
-/**
- * Create a user account for student (Step 1)
- * @param {Object} userData - User registration data
+ * STEP 1: Create user account for student
+ * @param {Object} userData - Basic user data (first_name, last_name, password, etc.)
  * @returns {Promise<Object>} - Created user with student role
  */
 export const createStudentUser = async (userData) => {
-  
   try {
-    console.log('👤 Creating student user account...');
+    console.log('👤 STEP 1: Creating student user account...');
     
     // Prepare user data with student role
     const studentUserData = {
-      ...userData,
-      role: 'student', // Force role to student
-      // These fields can be empty/optional
-      // email: userData.email?.trim() || null,
-      // phone_number: userData.phone_number?.trim() || null
-      email: userData.email?.trim() || '',
-      phone_number: userData.phone_number?.trim() || ''
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      role: 'student',
+      password: userData.password,
+      confirm_password: userData.confirm_password || userData.password,
     };
     
-    console.log('📦 User data:', studentUserData);
-    
-    const response = await userService.createUser(studentUserData);
-    
-    // FIX: Check different response structures
-    const user = response?.data?.user || response?.user || response?.data || response;
-    
-    if (!user) {
-      throw new Error('User creation succeeded but no user data returned');
+    // Add optional fields if present
+    if (userData.email && userData.email.trim()) {
+      studentUserData.email = userData.email.trim();
+    }
+    if (userData.phone_number && userData.phone_number.trim()) {
+      studentUserData.phone_number = userData.phone_number.trim();
+    }
+    if (userData.gender) {
+      studentUserData.gender = userData.gender;
+    }
+    if (userData.date_of_birth) {
+      studentUserData.date_of_birth = userData.date_of_birth;
+    }
+    if (userData.address && userData.address.trim()) {
+      studentUserData.address = userData.address.trim();
+    }
+    if (userData.city && userData.city.trim()) {
+      studentUserData.city = userData.city.trim();
+    }
+    if (userData.state_of_origin) {
+      studentUserData.state_of_origin = userData.state_of_origin;
+    }
+    if (userData.lga && userData.lga.trim()) {
+      studentUserData.lga = userData.lga.trim();
+    }
+    if (userData.nationality) {
+      studentUserData.nationality = userData.nationality;
     }
     
-    console.log('✅ Student user created:', user);
-    return user; // Return just the user object
+    console.log('📦 Sending user data to /auth/register/:', studentUserData);
     
+    // Register the user
+    const response = await api.post('/auth/register/', studentUserData);
+    
+    console.log('✅ Student user created:', response.data);
+    
+    return response.data; // Should contain user and tokens
   } catch (error) {
     console.error('❌ Error creating student user:', error);
-    
-    // Format error message
     let errorMessage = 'Failed to create user account';
     
     if (error.response?.data) {
       const errorData = error.response.data;
-      
       if (errorData.errors) {
-        errorMessage = 'Validation errors:\n';
-        Object.entries(errorData.errors).forEach(([field, errors]) => {
-          if (Array.isArray(errors)) {
-            errors.forEach(err => {
-              errorMessage += `• ${field}: ${err}\n`;
-            });
-          } else if (typeof errors === 'string') {
-            errorMessage += `• ${field}: ${errors}\n`;
+        const errors = [];
+        Object.entries(errorData.errors).forEach(([field, msgs]) => {
+          if (Array.isArray(msgs)) {
+            errors.push(`${field}: ${msgs.join(', ')}`);
+          } else {
+            errors.push(`${field}: ${msgs}`);
           }
         });
+        errorMessage = errors.join('; ');
       } else if (errorData.detail) {
         errorMessage = errorData.detail;
       } else if (errorData.error) {
         errorMessage = errorData.error;
-      } else if (typeof errorData === 'string') {
-        errorMessage = errorData;
       }
     } else if (error.message) {
       errorMessage = error.message;
     }
     
-    throw new Error(errorMessage.trim());
+    throw new Error(errorMessage);
   }
 };
 
@@ -179,50 +278,129 @@ export const createStudentProfile = async (userId, studentData) => {
   }
 };
 
+// /**
+//  * Create student with user in one operation (Alternative)
+//  * @param {Object} data - Complete student data with user info
+//  * @returns {Promise<Object>} - Created student with user
+//  */
+// /**
+//  * Create student with user (Step 1 + 2 combined)
+//  */
+// export const createStudentWithUser = async (userData, studentData, files = {}) => {
+//   try {
+//     console.log('🚀 Creating complete student...');
+    
+//     const formData = new FormData();
+    
+//     // Add user data
+//     Object.entries(userData).forEach(([key, value]) => {
+//       if (value !== null && value !== undefined && value !== '') {
+//         formData.append(key, typeof value === 'string' ? value.trim() : value);
+//       }
+//     });
+    
+//     // Add student data
+//     Object.entries(studentData).forEach(([key, value]) => {
+//       if (value !== null && value !== undefined && value !== '') {
+//         if (key === 'class_level') {
+//           formData.append(key, parseInt(value) || value);
+//         } else if (typeof value === 'boolean') {
+//           formData.append(key, value.toString());
+//         } else if (typeof value === 'number') {
+//           formData.append(key, value.toString());
+//         } else {
+//           formData.append(key, typeof value === 'string' ? value.trim() : value);
+//         }
+//       }
+//     });
+    
+//     // Add files
+//     Object.entries(files).forEach(([key, file]) => {
+//       if (file instanceof File) {
+//         formData.append(key, file);
+//       }
+//     });
+    
+//     const response = await api.post('/students/', formData, {
+//       headers: {
+//         'Content-Type': 'multipart/form-data',
+//       },
+//     });
+    
+//     console.log('✅ Student created successfully:', response.data);
+//     return response.data;
+    
+//   } catch (error) {
+//     console.error('❌ Student creation error:', error);
+    
+//     let errorMessage = 'Failed to create student';
+    
+//     if (error.response?.data) {
+//       const errorData = error.response.data;
+      
+//       if (errorData.errors) {
+//         errorMessage = 'Validation errors:\n';
+//         Object.entries(errorData.errors).forEach(([field, errors]) => {
+//           if (Array.isArray(errors)) {
+//             errors.forEach(err => {
+//               errorMessage += `• ${field}: ${err}\n`;
+//             });
+//           } else if (typeof errors === 'string') {
+//             errorMessage += `• ${field}: ${errors}\n`;
+//           }
+//         });
+//       } else if (errorData.message) {
+//         errorMessage = errorData.message;
+//       }
+//     }
+    
+//     throw new Error(errorMessage.trim());
+//   }
+// };
+
 /**
- * Create student with user in one operation (Alternative)
- * @param {Object} data - Complete student data with user info
- * @returns {Promise<Object>} - Created student with user
+ * COMPLETE: Create student with full profile (One-step alternative)
+ * This creates both user and student profile in ONE API call
  */
-/**
- * Create student with user (Step 1 + 2 combined)
- */
-export const createStudentWithUser = async (userData, studentData, files = {}) => {
+export const createStudentWithUser = async (formDataObj) => {
   try {
-    console.log('🚀 Creating complete student...');
+    console.log('🚀 Creating complete student (one-step)...');
     
-    const formData = new FormData();
+    // If formDataObj is already FormData, use it directly
+    let formData;
     
-    // Add user data
-    Object.entries(userData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined && value !== '') {
-        formData.append(key, typeof value === 'string' ? value.trim() : value);
-      }
-    });
-    
-    // Add student data
-    Object.entries(studentData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined && value !== '') {
-        if (key === 'class_level') {
-          formData.append(key, parseInt(value) || value);
-        } else if (typeof value === 'boolean') {
-          formData.append(key, value.toString());
-        } else if (typeof value === 'number') {
-          formData.append(key, value.toString());
-        } else {
-          formData.append(key, typeof value === 'string' ? value.trim() : value);
+    if (formDataObj instanceof FormData) {
+      formData = formDataObj;
+    } else {
+      formData = new FormData();
+      
+      // Add all fields from the object
+      for (const [key, value] of Object.entries(formDataObj)) {
+        if (value !== undefined && value !== null && value !== '') {
+          if (value instanceof File) {
+            formData.append(key, value);
+          } else if (typeof value === 'boolean') {
+            formData.append(key, value.toString());
+          } else {
+            formData.append(key, value);
+          }
         }
       }
-    });
+    }
     
-    // Add files
-    Object.entries(files).forEach(([key, file]) => {
-      if (file instanceof File) {
-        formData.append(key, file);
+    // Log what we're sending
+    console.log('📦 Sending to backend:');
+    for (let [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`  ${key}: [File] ${value.name}`);
+      } else {
+        console.log(`  ${key}: ${value}`);
       }
-    });
+    }
     
-    const response = await api.post('/students/', formData, {
+    // Check if we're using the correct endpoint
+    // Your backend expects /students/create-with-user/ or /students/api/
+    const response = await api.post('/students/create-with-user/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -230,7 +408,6 @@ export const createStudentWithUser = async (userData, studentData, files = {}) =
     
     console.log('✅ Student created successfully:', response.data);
     return response.data;
-    
   } catch (error) {
     console.error('❌ Student creation error:', error);
     
@@ -238,26 +415,29 @@ export const createStudentWithUser = async (userData, studentData, files = {}) =
     
     if (error.response?.data) {
       const errorData = error.response.data;
-      
       if (errorData.errors) {
-        errorMessage = 'Validation errors:\n';
-        Object.entries(errorData.errors).forEach(([field, errors]) => {
-          if (Array.isArray(errors)) {
-            errors.forEach(err => {
-              errorMessage += `• ${field}: ${err}\n`;
-            });
-          } else if (typeof errors === 'string') {
-            errorMessage += `• ${field}: ${errors}\n`;
+        const errorList = [];
+        Object.entries(errorData.errors).forEach(([field, msgs]) => {
+          if (Array.isArray(msgs)) {
+            errorList.push(`${field}: ${msgs.join(', ')}`);
+          } else {
+            errorList.push(`${field}: ${msgs}`);
           }
         });
+        errorMessage = errorList.join('; ');
       } else if (errorData.message) {
         errorMessage = errorData.message;
+      } else if (errorData.detail) {
+        errorMessage = errorData.detail;
       }
+    } else if (error.message) {
+      errorMessage = error.message;
     }
     
-    throw new Error(errorMessage.trim());
+    throw new Error(errorMessage);
   }
 };
+
 
 // =====================
 // ACADEMIC DATA
@@ -321,398 +501,124 @@ export const getAllStudents = async () => {
   }
 };
 
+// src/services/studentService.js - ADD THIS FUNCTION
+
 /**
- * Get student by ID
+ * Fetch ALL students (no pagination limit) for export
+ * @returns {Promise<Array>} - All students in the system
+ */
+export const getAllStudentsForExport = async () => {
+  try {
+    console.log('📊 Fetching ALL students for export...');
+    
+    let allStudents = [];
+    let nextPage = null;
+    let page = 1;
+    
+    // Keep fetching until we have all pages
+    do {
+      const params = {
+        page: page,
+        limit: 100,  // Fetch 100 at a time
+        ...(nextPage ? { page: page } : {})
+      };
+      
+      const response = await getStudents(params);
+      const students = response.results || [];
+      allStudents = [...allStudents, ...students];
+      
+      // Check if there are more pages
+      const totalPages = response.total_pages || Math.ceil((response.count || 0) / 100);
+      
+      console.log(`📥 Fetched page ${page} of ${totalPages}, total so far: ${allStudents.length}`);
+      
+      page++;
+      
+      // Stop if we've fetched all pages
+      if (page > totalPages) {
+        break;
+      }
+      
+    } while (true);
+    
+    console.log(`✅ Fetched ${allStudents.length} total students for export`);
+    return allStudents;
+    
+  } catch (error) {
+    console.error('❌ Error fetching all students:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get student by ID with full details
+ * @param {number} studentId - Student ID
+ * @returns {Promise<Object>} - Complete student data
  */
 export const getStudentById = async (studentId) => {
   try {
-    console.log(`👤 Fetching student ${studentId}...`);
+    console.log(`👤 Fetching student details for ID: ${studentId}`);
     
-    // CHANGE FROM: const response = await api.get(`/students/${studentId}/`);
-    // TO THIS:
+    // Use the correct endpoint - /students/api/{id}/
     const response = await api.get(`/students/api/${studentId}/`);
     
-    console.log('✅ Student fetched:', response.data);
-    return response.data;
+    console.log('✅ Student details fetched:', response.data);
     
+    // Return the student data (it might be nested under 'student' or directly)
+    const studentData = response.data.student || response.data;
+    
+    return studentData;
   } catch (error) {
     console.error(`❌ Error fetching student ${studentId}:`, error);
     throw error;
   }
 };
 
-/**
- * Update student profile with full data (including files)
- */
-// In studentService.js - update the updateStudent function
-// export const updateStudent = async (studentId, data) => {
-//   try {
-//     console.log(`🔄 UPDATING STUDENT ${studentId}...`);
-    
-//     const formData = new FormData();
-    
-//     // Add all fields - FIXED: Proper field mapping
-//     Object.entries(data).forEach(([key, value]) => {
-//       if (value !== null && value !== undefined) {
-//         if (value instanceof File) {
-//           formData.append(key, value);
-//           console.log(`  ${key}: [File] ${value.name}`);
-//         } else if (typeof value === 'boolean') {
-//           formData.append(key, value.toString());
-//           console.log(`  ${key}: ${value} (boolean)`);
-//         } else if (value === '') {
-//           // Send empty string for clearing fields
-//           formData.append(key, '');
-//           console.log(`  ${key}: "" (empty string)`);
-//         } else if (key === 'class_level') {
-//           formData.append(key, value.toString());
-//           console.log(`  ${key}: ${value} (class level)`);
-//         } else {
-//           formData.append(key, typeof value === 'string' ? value.trim() : value);
-//           console.log(`  ${key}: "${value}" (${typeof value})`);
-//         }
-//       }
-//     });
-    
-//     // Debug log
-//     console.log(`📤 Sending PUT request to /students/api/${studentId}/full-update/`);
-    
-//     // Use the correct endpoint
-//     const response = await api.put(`/students/api/${studentId}/full-update/`, formData, {
-//       headers: {
-//         'Content-Type': 'multipart/form-data',
-//       },
-//     });
-    
-//     console.log('✅ Student updated:', response.data);
-//     return response.data;
-    
-//   } catch (error) {
-//     console.error(`❌ Update error for student ${studentId}:`, error);
-//     console.error('❌ Error response:', error.response?.data);
-    
-//     let errorMessage = 'Failed to update student';
-    
-//     if (error.response?.data) {
-//       const errorData = error.response.data;
-//       console.error('📋 Error details:', errorData);
-      
-//       if (errorData.message) {
-//         errorMessage = errorData.message;
-//       } else if (errorData.detail) {
-//         errorMessage = errorData.detail;
-//       } else if (errorData.errors) {
-//         // Handle validation errors
-//         const errors = [];
-//         Object.entries(errorData.errors).forEach(([field, messages]) => {
-//           if (Array.isArray(messages)) {
-//             errors.push(`${field}: ${messages.join(', ')}`);
-//           } else {
-//             errors.push(`${field}: ${messages}`);
-//           }
-//         });
-//         errorMessage = errors.join('\n');
-//       }
-//     }
-    
-//     throw new Error(errorMessage);
-//   }
-// };
 
-/**
- * Update student profile with full data (including files) - FIXED VERSION
- */
 export const updateStudent = async (studentId, data) => {
   try {
     console.log(`🔄 UPDATING STUDENT ${studentId}...`);
     
-    const formData = new FormData();
-    
-    // =====================
-    // ADD ALL FIELDS - CRITICAL
-    // =====================
-    const allFields = [
-      // User fields
-      'first_name', 'last_name', 'email', 'phone_number',
-      'gender', 'date_of_birth', 'address', 'city',
-      'state_of_origin', 'lga', 'nationality',
-      
-      // Student fields
-      'class_level', 'stream', 'admission_date', 'student_category',
-      'house', 'place_of_birth', 'home_language', 'previous_class',
-      'previous_school', 'transfer_certificate_no', 'is_prefect',
-      'prefect_role', 'emergency_contact_name', 'emergency_contact_phone',
-      'emergency_contact_relationship', 'fee_status', 'total_fee_amount',
-      'amount_paid', 'blood_group', 'genotype', 'has_allergies',
-      'allergy_details', 'has_received_vaccinations', 'family_doctor_name',
-      'family_doctor_phone', 'medical_conditions', 'has_learning_difficulties',
-      'learning_difficulties_details', 'transportation_mode', 'bus_route',
-      'is_active', 'is_graduated', 'graduation_date'
-    ];
-    
-    // Fields that have NOT NULL constraint and need default value
-    // const notNullFields = {
-    //   'address': '',
-    //   'city': '',
-    //   'lga': '',
-    //   'home_language': '',
-    //   'previous_class': '',
-    //   'previous_school': '',
-    //   'transfer_certificate_no': '',
-    //   'prefect_role': '',
-    //   'emergency_contact_name': '',
-    //   'emergency_contact_phone': '',
-    //   'emergency_contact_relationship': '',
-    //   'allergy_details': '',
-    //   'family_doctor_name': '',
-    //   'family_doctor_phone': '',
-    //   'medical_conditions': '',
-    //   'learning_difficulties_details': '',
-    //   'bus_route': '',
-    //   'blood_group': '',
-    //   'genotype': '',
-    //   'place_of_birth': ''
-    // };
-
-    const notNullFields = {
-      'address': '',
-      'city': '',
-      'lga': '',
-      'phone_number': '0000000000',
-      'home_language': '',
-      'previous_class': '',
-      'previous_school': '',
-      'transfer_certificate_no': '',
-      'prefect_role': '',
-      'emergency_contact_name': '',
-      'emergency_contact_phone': '',
-      'emergency_contact_relationship': '',
-      'allergy_details': '',
-      'family_doctor_name': '',
-      'family_doctor_phone': '',
-      'medical_conditions': '',
-      'learning_difficulties_details': '',
-      'bus_route': '',
-      'blood_group': '',
-      'genotype': '',
-      'place_of_birth': ''
-    };
-    
-    // =====================
-    // PROCESS REGULAR FIELDS
-    // =====================
-    console.log('📝 Processing regular fields...');
-    // allFields.forEach(field => {
-    //   if (field in data) {
-    //     let value = data[field];
-        
-    //     // Skip file fields here
-    //     if (value instanceof File) {
-    //       return;
-    //     }
-        
-    //     // Handle null/undefined values
-    //     if (value === null || value === undefined) {
-    //       // For NOT NULL fields, use empty string as default
-    //       if (field in notNullFields) {
-    //         value = notNullFields[field];
-    //         console.log(`  ✓ ${field}: "${value}" (default for NOT NULL field)`);
-    //       } else {
-    //         // For nullable fields, send empty string
-    //         value = '';
-    //         console.log(`  ✓ ${field}: "" (empty - nullable field)`);
-    //       }
-    //     } else if (value === '') {
-    //       // Already empty string - keep it for NOT NULL fields
-    //       if (field in notNullFields) {
-    //         console.log(`  ✓ ${field}: "" (empty - NOT NULL field, will be stored as empty)`);
-    //       } else {
-    //         console.log(`  ✓ ${field}: "" (empty - nullable field)`);
-    //       }
-    //     } else {
-    //       // Has value
-    //       console.log(`  ✓ ${field}: "${value}" (type: ${typeof data[field]})`);
-    //     }
-        
-    //     // Handle boolean fields
-    //     if (typeof value === 'boolean') {
-    //       value = value.toString();
-    //     }
-        
-    //     // Handle numeric fields
-    //     if (field === 'total_fee_amount' || field === 'amount_paid') {
-    //       value = value ? parseFloat(value).toString() : '0';
-    //     }
-        
-    //     // Handle class_level
-    //     if (field === 'class_level' && value && typeof value === 'object' && value.id) {
-    //       value = value.id.toString();
-    //     } else if (field === 'class_level' && value) {
-    //       value = value.toString();
-    //     }
-        
-    //     formData.append(field, value);
-    //   }
-    // });
-    
-    allFields.forEach(field => {
-      // Always process every field, even if not in data
-      // This ensures NOT NULL fields always get a value sent to backend
-      let value = field in data ? data[field] : undefined;
-
-      // Skip file fields here
-      if (value instanceof File) {
-        return;
-      }
-
-      // Handle null/undefined values
-      if (value === null || value === undefined) {
-        // For NOT NULL fields, use empty string as default
-        if (field in notNullFields) {
-          value = notNullFields[field];
-          console.log(`  ✓ ${field}: "${value}" (default for NOT NULL field)`);
-        } else {
-          // For nullable fields, send empty string
-          value = '';
-          console.log(`  ✓ ${field}: "" (empty - nullable field)`);
-        }
-      } else if (value === '') {
-        // Already empty string
-        if (field in notNullFields) {
-          console.log(`  ✓ ${field}: "" (empty - NOT NULL field, will be stored as empty)`);
-        } else {
-          console.log(`  ✓ ${field}: "" (empty - nullable field)`);
-        }
-      } else {
-        // Has value
-        console.log(`  ✓ ${field}: "${value}" (type: ${typeof value})`);
-      }
-
-      // Handle boolean fields
-      if (typeof value === 'boolean') {
-        value = value.toString();
-      }
-
-      // Handle numeric fields
-      if (field === 'total_fee_amount' || field === 'amount_paid') {
-        value = value ? parseFloat(value).toString() : '0';
-      }
-
-      // Handle class_level
-      if (field === 'class_level' && value && typeof value === 'object' && value.id) {
-        value = value.id.toString();
-      } else if (field === 'class_level' && value) {
-        value = value.toString();
-      }
-
-      formData.append(field, value);
-    });
-
-    // =====================
-    // PROCESS FILE FIELDS
-    // =====================
-    const fileFields = [
-      'student_image', 'birth_certificate', 'immunization_record',
-      'previous_school_report', 'parent_id_copy', 'fee_payment_evidence'
-    ];
-    
-    console.log('📁 Processing file fields...');
-    fileFields.forEach(field => {
-      if (field in data) {
-        const file = data[field];
-        
-        if (file instanceof File) {
-          formData.append(field, file);
-          console.log(`  ✓ ${field}: [File] ${file.name} (${file.size} bytes)`);
-        } else if (file === null || file === 'null') {
-          // Don't send null files
-          console.log(`  ✓ ${field}: [Skipped - null/empty]`);
+    // If data is FormData, use it directly
+    let formData;
+    if (data instanceof FormData) {
+      formData = data;
+    } else {
+      formData = new FormData();
+      for (const [key, value] of Object.entries(data)) {
+        if (value !== null && value !== undefined && value !== '') {
+          if (value instanceof File) {
+            formData.append(key, value);
+          } else if (typeof value === 'boolean') {
+            formData.append(key, value.toString());
+          } else {
+            formData.append(key, value);
+          }
         }
       }
-    });
+    }
     
-    // =====================
-    // LOG FINAL FORMDATA
-    // =====================
-    console.log('📋 FINAL FORMDATA:');
+    // Log what we're sending
+    console.log('📦 Sending update data:');
     for (let [key, value] of formData.entries()) {
       if (value instanceof File) {
         console.log(`  ${key}: [File] ${value.name}`);
       } else {
-        console.log(`  ${key}: "${value}"`);
+        console.log(`  ${key}: ${value}`);
       }
     }
     
-    // =====================
-    // SEND REQUEST
-    // =====================
-    // console.log(`🚀 Sending PUT request to /students/api/${studentId}/full-update/`);
-    
-    // const response = await api.put(`/students/api/${studentId}/full-update/`, formData, {
-    //   headers: {
-    //     'Content-Type': 'multipart/form-data',
-    //   },
-    // });
-// Check if any files are being sent
-  const hasFiles = Array.from(formData.entries()).some(([, value]) => value instanceof File);
-
-  console.log(`🚀 Sending request to /students/api/${studentId}/full-update/`);
-
-  let response;
-
-  if (hasFiles) {
-    // Only use multipart if files are present
-    response = await api.put(`/students/api/${studentId}/full-update/`, formData, {
+    const response = await api.put(`/students/api/${studentId}/full-update/`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-  } else {
-    // No files — send as plain JSON (much faster)
-    const jsonData = {};
-    for (let [key, value] of formData.entries()) {
-      jsonData[key] = value;
-    }
-    response = await api.put(`/students/api/${studentId}/full-update/`, jsonData, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  }
-    console.log('✅ UPDATE SUCCESSFUL');
-    console.log('📊 Response:', response.data);
     
+    console.log('✅ Update successful:', response.data);
     return response.data;
-    
   } catch (error) {
     console.error(`❌ UPDATE ERROR for student ${studentId}:`, error);
-    console.error('❌ Error details:', error.response?.data || error.message);
-    
-    let errorMessage = 'Failed to update student';
-    
-    if (error.response?.data) {
-      const errorData = error.response.data;
-      // console.error('🔍 Backend error details:', errorData);
-      console.log('🔍 Backend error details:', JSON.stringify(errorData, null, 2));
-      
-      if (errorData.message) {
-        errorMessage = errorData.message;
-      } else if (errorData.detail) {
-        errorMessage = errorData.detail;
-      } else if (errorData.errors) {
-        const errors = [];
-        Object.entries(errorData.errors).forEach(([field, messages]) => {
-          if (Array.isArray(messages)) {
-            errors.push(`${field}: ${messages.join(', ')}`);
-          } else {
-            errors.push(`${field}: ${messages}`);
-          }
-        });
-        errorMessage = errors.join('\n');
-      }
-    }
-    
-    throw new Error(errorMessage);
+    throw error;
   }
 };
 
@@ -822,71 +728,111 @@ export const checkExistingStudent = async (userId) => {
   }
 };
 
+// /**
+//  * Update existing student profile
+//  * @param {number} studentId - Student ID
+//  * @param {Object} studentData - Updated student data
+//  * @returns {Promise<Object>} - Updated student
+//  */
+// export const updateStudentProfile = async (studentId, studentData) => {
+//   try {
+//     const formData = new FormData();
+    
+//     // Add all student data
+//     Object.entries(studentData).forEach(([key, value]) => {
+//       if (value !== null && value !== undefined && value !== '') {
+//         if (key === 'class_level') {
+//           formData.append(key, parseInt(value) || value);
+//         } else if (typeof value === 'boolean') {
+//           formData.append(key, value.toString());
+//         } else if (typeof value === 'number') {
+//           formData.append(key, value.toString());
+//         } else {
+//           formData.append(key, typeof value === 'string' ? value.trim() : value);
+//         }
+//       }
+//     });
+    
+//     // Add files
+//     if (studentData.files) {
+//       Object.entries(studentData.files).forEach(([key, file]) => {
+//         if (file && file instanceof File) {
+//           formData.append(key, file);
+//         }
+//       });
+//     }
+    
+//     const response = await api.put(`/students/${studentId}/update/`, formData, {
+//       headers: {
+//         'Content-Type': 'multipart/form-data',
+//       },
+//     });
+    
+//     return response.data;
+//   } catch (error) {
+//     console.error('Error updating student:', error);
+//     throw error;
+//   }
+// };
+
 /**
- * Update existing student profile
- * @param {number} studentId - Student ID
- * @param {Object} studentData - Updated student data
- * @returns {Promise<Object>} - Updated student
+ * STEP 2: Update student profile with additional information
+ * @param {number} studentId - The student's ID (from the user's student profile)
+ * @param {Object} studentData - Additional student data
+ * @returns {Promise<Object>} - Updated student profile
  */
 export const updateStudentProfile = async (studentId, studentData) => {
   try {
+    console.log(`📝 STEP 2: Updating student profile for ID: ${studentId}`);
+    
     const formData = new FormData();
     
-    // Add all student data
-    Object.entries(studentData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined && value !== '') {
-        if (key === 'class_level') {
-          formData.append(key, parseInt(value) || value);
-        } else if (typeof value === 'boolean') {
-          formData.append(key, value.toString());
-        } else if (typeof value === 'number') {
-          formData.append(key, value.toString());
+    // Add all student fields
+    const fieldsToSend = [
+      'class_level', 'stream', 'house', 'student_category', 'admission_date',
+      'previous_school', 'previous_class', 'transfer_certificate_no',
+      'blood_group', 'genotype', 'has_allergies', 'allergy_details',
+      'has_received_vaccinations', 'family_doctor_name', 'family_doctor_phone',
+      'medical_conditions', 'has_learning_difficulties', 'learning_difficulties_details',
+      'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship',
+      'transportation_mode', 'bus_route', 'is_prefect', 'prefect_role'
+    ];
+    
+    for (const field of fieldsToSend) {
+      if (studentData[field] !== undefined && studentData[field] !== null && studentData[field] !== '') {
+        if (typeof studentData[field] === 'boolean') {
+          formData.append(field, studentData[field].toString());
         } else {
-          formData.append(key, typeof value === 'string' ? value.trim() : value);
+          formData.append(field, studentData[field]);
         }
       }
-    });
-    
-    // Add files
-    if (studentData.files) {
-      Object.entries(studentData.files).forEach(([key, file]) => {
-        if (file && file instanceof File) {
-          formData.append(key, file);
-        }
-      });
     }
     
-    const response = await api.put(`/students/${studentId}/update/`, formData, {
+    // Add files if present
+    const fileFields = [
+      'student_image', 'birth_certificate', 'immunization_record',
+      'previous_school_report', 'parent_id_copy', 'fee_payment_evidence'
+    ];
+    
+    for (const field of fileFields) {
+      if (studentData[field] instanceof File) {
+        formData.append(field, studentData[field]);
+        console.log(`📁 Adding file: ${field} - ${studentData[field].name}`);
+      }
+    }
+    
+    console.log('📤 Sending update to API...');
+    
+    const response = await api.put(`/students/api/${studentId}/full-update/`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
     
+    console.log('✅ Student profile updated:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error updating student:', error);
-    throw error;
-  }
-};
-
-/**
- * Delete student by ID
- * @param {number} studentId - Student ID
- * @returns {Promise<Object>} - Deletion result
- */
-export const deleteStudentFile = async (studentId, fileType) => {
-  try {
-    console.log(`🗑️ Deleting ${fileType} for student ${studentId}...`);
-    
-    // CHANGE FROM: const response = await api.delete(`/students/${studentId}/delete-file/${fileType}/`);
-    // TO THIS:
-    const response = await api.delete(`/students/api/${studentId}/delete-file/${fileType}/`);
-    
-    console.log('✅ File deleted:', response.data);
-    return response.data;
-    
-  } catch (error) {
-    console.error(`❌ Error deleting file for student ${studentId}:`, error);
+    console.error('❌ Error updating student profile:', error);
     throw error;
   }
 };
@@ -1103,18 +1049,22 @@ export const uploadStudentDocument = async (studentId, documentData) => {
   }
 };
 
+// src/services/studentService.js - KEEP ONLY THIS VERSION
+
+/**
+ * Archive a student (instead of delete)
+ * @param {number} studentId - Student ID
+ * @returns {Promise<Object>} - Archive result
+ */
 export const deleteStudent = async (studentId) => {
   try {
-    console.log(`🗑️ Deleting student ${studentId}...`);
-    
-    // FIXED: Add /delete/ suffix to match your URL configuration
-    const response = await api.delete(`/students/api/${studentId}/delete/`);
-    
-    console.log('✅ Student deleted:', response.data);
+    console.log(`📦 Archiving student ${studentId}...`);
+    // Use the archive endpoint instead of delete
+    const response = await api.post(`/students/api/${studentId}/archive/`);
+    console.log('✅ Student archived:', response.data);
     return response.data;
-    
   } catch (error) {
-    console.error(`❌ Error deleting student ${studentId}:`, error);
+    console.error(`❌ Error archiving student ${studentId}:`, error);
     throw error;
   }
 };
@@ -1201,6 +1151,51 @@ export const getStudentByRegistrationNumber = async (registrationNumber) => {
   }
 };
 
+// src/services/studentService.js - ADD THIS FUNCTION if not already present
+
+/**
+ * Fetch ALL students (no pagination limit) for printing/export
+ * @returns {Promise<Array>} - All students in the system
+ */
+export const getAllStudentsForPrint = async () => {
+  try {
+    console.log('📊 Fetching ALL students for printing...');
+    
+    let allStudents = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    
+    // First, get the first page to know total pages
+    const firstResponse = await getStudents({ page: 1, limit: 100 });
+    totalPages = firstResponse.total_pages || 1;
+    allStudents = [...(firstResponse.results || [])];
+    
+    console.log(`📊 Total pages: ${totalPages}, Total students: ${firstResponse.count || 0}`);
+    
+    // Fetch remaining pages in parallel for better performance
+    if (totalPages > 1) {
+      const remainingPages = [];
+      for (let page = 2; page <= totalPages; page++) {
+        remainingPages.push(getStudents({ page: page, limit: 100 }));
+      }
+      
+      const remainingResponses = await Promise.all(remainingPages);
+      
+      remainingResponses.forEach(response => {
+        const students = response.results || [];
+        allStudents = [...allStudents, ...students];
+      });
+    }
+    
+    console.log(`✅ Fetched ${allStudents.length} total students for printing`);
+    return allStudents;
+    
+  } catch (error) {
+    console.error('❌ Error fetching all students:', error);
+    throw error;
+  }
+};
+
 /**
  * Create student enrollment
  * @param {number} studentId - Student ID
@@ -1252,18 +1247,240 @@ export const getStudentEnrollments = async (studentId) => {
   }
 };
 
-
-// studentService.js
-
 export const getStudentDashboard = async () => {
   try {
     const response = await api.get('/students/dashboard/');
-    return response.data;  // { student, results, statistics }
+    console.log('Student dashboard raw response:', response.data);
+    
+    // Ensure student data has class_level properly formatted
+    if (response.data && response.data.student) {
+      const student = response.data.student;
+      console.log('Student class_level:', student.class_level);
+      console.log('Student total_fee_amount:', student.total_fee_amount);
+      console.log('Student amount_paid:', student.amount_paid);
+      console.log('Student balance_due:', student.balance_due);
+      
+      // If class_level is an ID, fetch the actual class level name
+      if (student.class_level && typeof student.class_level === 'number') {
+        try {
+          // Import dynamically to avoid circular dependency
+          const { getClassLevelById } = await import('./academicService');
+          const classLevelRes = await getClassLevelById(student.class_level);
+          student.class_level = classLevelRes.data || classLevelRes;
+        } catch (err) {
+          console.warn('Could not fetch class level details:', err);
+        }
+      }
+      
+      // Ensure fee fields are numbers
+      student.total_fee_amount = parseFloat(student.total_fee_amount) || 0;
+      student.amount_paid = parseFloat(student.amount_paid) || 0;
+      student.balance_due = parseFloat(student.balance_due) || (student.total_fee_amount - student.amount_paid);
+      
+      // Add fee summary
+      student.fee_summary = {
+        total_fee: student.total_fee_amount,
+        paid: student.amount_paid,
+        balance: student.balance_due,
+        status: student.fee_status
+      };
+    }
+    
+    return response.data;
   } catch (error) {
     console.error('Error fetching student dashboard:', error);
     throw error;
   }
 };
+
+// src/services/studentService.js - ADD THIS FUNCTION
+
+// src/services/studentService.js - UPDATE bulk upload functions
+
+/**
+ * Bulk upload students from CSV file
+ * @param {File} file - CSV file containing student data
+ * @returns {Promise<Object>} - Upload results
+ */
+export const bulkUploadStudents = async (file) => {
+  try {
+    console.log('📤 Starting bulk upload...');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // FIXED: Use correct endpoint that matches Django URL
+    const response = await api.post('/students/bulk-upload/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 120000,
+    });
+    
+    console.log('✅ Bulk upload successful:', response.data);
+    return response.data;
+    
+  } catch (error) {
+    console.error('❌ Bulk upload error:', error);
+    
+    let errorMessage = 'Failed to upload students';
+    
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      if (errorData.error) {
+        errorMessage = errorData.error;
+      } else if (errorData.detail) {
+        errorMessage = errorData.detail;
+      } else if (typeof errorData === 'string') {
+        errorMessage = errorData;
+      }
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    throw new Error(errorMessage);
+  }
+};
+
+/**
+ * Download all students as CSV
+ * @returns {Promise<Blob>} - CSV file blob
+ */
+export const downloadAllStudentsCSV = async () => {
+  try {
+    console.log('📥 Downloading all students as CSV...');
+    
+    const response = await api.get('/students/bulk-download/', {
+      responseType: 'blob',
+    });
+    
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = 'students.csv';
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (filenameMatch) filename = filenameMatch[1];
+    }
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    console.log('✅ Download successful');
+    return { success: true };
+    
+  } catch (error) {
+    console.error('❌ Download error:', error);
+    throw new Error('Failed to download students data');
+  }
+};
+
+/**
+ * Download CSV template for bulk upload
+ */
+export const downloadBulkUploadTemplate = () => {
+  const headers = [
+    'registration_number', 'first_name', 'last_name', 'email', 'phone_number',
+    'password', 'gender', 'date_of_birth', 'address', 'city', 'state_of_origin',
+    'lga', 'nationality', 'class_level_id', 'stream', 'house', 'student_category',
+    'admission_date', 'blood_group', 'genotype', 'emergency_contact_name',
+    'emergency_contact_phone', 'emergency_contact_relationship', 'transportation_mode',
+    'has_allergies', 'allergy_details', 'medical_conditions'
+  ];
+  
+  // Add example row
+  const exampleRow = [
+    '', 'John', 'Doe', 'john.doe@example.com', '08012345678',
+    'admin123', 'male', '2010-01-01', '123 Main St', 'Lagos', 'lagos',
+    'Ikeja', 'Nigerian', '1', 'science', 'red', 'day',
+    '2024-01-01', 'O+', 'AA', 'Jane Doe', '08087654321',
+    'Mother', 'parent_drop', 'No', '', ''
+  ];
+  
+  const csvContent = [headers, exampleRow].map(row => 
+    row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+  ).join('\n');
+  
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `student_upload_template.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * Validate CSV file before upload
+ * @param {File} file - CSV file to validate
+ * @returns {Object} - Validation result
+ */
+export const validateBulkUploadFile = (file) => {
+  const errors = [];
+  
+  // Check if file exists
+  if (!file) {
+    errors.push('No file selected');
+    return { isValid: false, errors };
+  }
+  
+  // Check file type
+  const validTypes = ['text/csv', 'application/vnd.ms-excel', '.csv'];
+  const fileExtension = file.name.split('.').pop().toLowerCase();
+  
+  if (!validTypes.includes(file.type) && fileExtension !== 'csv') {
+    errors.push('Invalid file type. Please upload a CSV file.');
+  }
+  
+  // Check file size (max 10MB)
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSize) {
+    errors.push(`File too large. Maximum size is 10MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB.`);
+  }
+  
+  // Check if file is empty
+  if (file.size === 0) {
+    errors.push('File is empty. Please upload a valid CSV file.');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+// src/services/studentService.js - UPDATE archive function
+
+// src/services/studentService.js - ADD these functions
+
+export const archiveStudent = async (studentId) => {
+  try {
+    const formData = new FormData();
+    formData.append('is_active', 'false');
+    const response = await api.put(`/students/api/${studentId}/full-update/`, formData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const restoreStudent = async (studentId) => {
+  try {
+    const formData = new FormData();
+    formData.append('is_active', 'true');
+    const response = await api.put(`/students/api/${studentId}/full-update/`, formData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 // =====================
 // USER REGISTRATION (STEP 1)
@@ -1323,7 +1540,16 @@ const studentService = {
 
   getStudentByRegistrationNumber,
 
-  getStudentDashboard
+  getStudentDashboard,
+
+  getAllStudentsForExport,
+  getAllStudentsForPrint,
+  validateBulkUploadFile,
+  bulkUploadStudents,
+  downloadBulkUploadTemplate,
+  downloadAllStudentsCSV,
+  restoreStudent,
+  archiveStudent 
 };
 
 export default studentService;

@@ -259,6 +259,83 @@ export const AuthProvider = ({ children }) => {
 
 // In your AuthContext.jsx, find the login function and update it:
 
+  // const login = async (credentials) => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+      
+  //     // Call the service
+  //     const response = await loginService(credentials);
+      
+  //     // Handle the response format from your backend
+  //     if (response.tokens && response.user) {
+  //       // Save tokens and user data
+  //       const authData = {
+  //         tokens: response.tokens,
+  //         user: response.user,
+  //       };
+  //       setAuthData(authData);
+        
+  //       // Update state
+  //       setUser(response.user);
+  //       setIsAuthenticated(true);
+  //       setupSessionTimeout();
+        
+  //       // CRITICAL FIX: Use window.location for hard redirect
+  //       console.log('🔐 Login successful, user role:', response.user.role);
+        
+  //       if (response.user.role === 'student') {
+  //         console.log('➡️ Redirecting to student dashboard');
+  //         window.location.href = '/student-dashboard';
+  //       } else {
+  //         console.log('➡️ Redirecting to admin dashboard');
+  //         window.location.href = '/dashboard';
+  //       }
+        
+  //       return response;
+  //     }
+      
+  //     // If response format is different, try alternative
+  //     if (response.access && response.user) {
+  //       const authData = {
+  //         tokens: {
+  //           access: response.access,
+  //           refresh: response.refresh || '',
+  //         },
+  //         user: response.user,
+  //       };
+  //       setAuthData(authData);
+        
+  //       setUser(response.user);
+  //       setIsAuthenticated(true);
+  //       setupSessionTimeout();
+        
+  //       // CRITICAL FIX: Use window.location for hard redirect
+  //       console.log('🔐 Login successful, user role:', response.user.role);
+        
+  //       if (response.user.role === 'student') {
+  //         console.log('➡️ Redirecting to student dashboard');
+  //         window.location.href = '/student-dashboard';
+  //       } else {
+  //         console.log('➡️ Redirecting to admin dashboard');
+  //         window.location.href = '/dashboard';
+  //       }
+        
+  //       return response;
+  //     }
+      
+  //     throw new Error('Invalid login response format');
+      
+  //   } catch (error) {
+  //     const errorMessage = handleApiError(error);
+  //     setError(errorMessage);
+  //     throw error;
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+// In AuthContext.jsx - Updated login function
   const login = async (credentials) => {
     try {
       setLoading(true);
@@ -281,13 +358,19 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
         setupSessionTimeout();
         
-        // CRITICAL FIX: Use window.location for hard redirect
+        // CRITICAL FIX: Redirect based on user role
         console.log('🔐 Login successful, user role:', response.user.role);
         
         if (response.user.role === 'student') {
           console.log('➡️ Redirecting to student dashboard');
           window.location.href = '/student-dashboard';
-        } else {
+        } 
+        else if (response.user.role === 'parent') {
+          // ✅ NEW: Redirect parents to parent portal
+          console.log('➡️ Redirecting to parent portal');
+          window.location.href = '/parent-portal';
+        }
+        else {
           console.log('➡️ Redirecting to admin dashboard');
           window.location.href = '/dashboard';
         }
@@ -310,13 +393,19 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
         setupSessionTimeout();
         
-        // CRITICAL FIX: Use window.location for hard redirect
+        // CRITICAL FIX: Redirect based on user role
         console.log('🔐 Login successful, user role:', response.user.role);
         
         if (response.user.role === 'student') {
           console.log('➡️ Redirecting to student dashboard');
           window.location.href = '/student-dashboard';
-        } else {
+        }
+        else if (response.user.role === 'parent') {
+          // ✅ NEW: Redirect parents to parent portal
+          console.log('➡️ Redirecting to parent portal');
+          window.location.href = '/parent-portal';
+        }
+        else {
           console.log('➡️ Redirecting to admin dashboard');
           window.location.href = '/dashboard';
         }

@@ -12,7 +12,9 @@ import {
   ChevronLeft,
   ChevronRight as ChevronRightIcon,
   Bell,
-  Settings
+  Settings,
+  CreditCard,     
+  BookOpen 
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 
@@ -44,6 +46,17 @@ const StudentSidebar = () => {
       label: 'Dashboard', 
       icon: <Home size={20} />,
       exact: true 
+    },
+    // ADD THESE TWO MENU ITEMS
+    { 
+      path: '/payments', 
+      label: 'Payments', 
+      icon: <CreditCard size={20} />,
+    },
+    { 
+      path: '/library', 
+      label: 'Library', 
+      icon: <BookOpen size={20} />,
     },
   ];
 

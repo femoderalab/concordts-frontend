@@ -772,6 +772,141 @@ export const generateAdmissionNumber = (schoolCode = 'CTS', year = new Date().ge
   return `${schoolCode}/${year}/${seqStr}`;
 };
 
+// src/pages/students/components/StudentPrintUtils.js - FIXED
+
+export const printAllStudents = (students) => {
+  if (!students || students.length === 0) {
+    console.warn('No students to print');
+    alert('No students found to print');
+    return;
+  }
+  
+  console.log(`🖨️ Printing ${students.length} students...`);
+  
+  // Create combined HTML for all students
+  let combinedHTML = `<!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <title>All Students Record - ${students.length} Students</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 15mm;
+      }
+      @media print {
+        body {
+          margin: 0;
+          padding: 0;
+        }
+        .student-card {
+          page-break-after: always;
+          page-break-inside: avoid;
+        }
+        .student-card:last-child {
+          page-break-after: auto;
+        }
+      }
+      body {
+        font-family: 'Arial', sans-serif;
+        background: white;
+        padding: 20px;
+      }
+      .print-header {
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #003366;
+      }
+      .print-header h1 {
+        color: #003366;
+        margin: 0;
+        font-size: 24px;
+      }
+      .print-header p {
+        color: #666;
+        margin: 5px 0;
+        font-size: 12px;
+      }
+      .student-card {
+        margin-bottom: 30px;
+        page-break-after: always;
+      }
+      .print-footer {
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 10px;
+        border-top: 1px solid #ccc;
+        font-size: 10px;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="print-header">
+      <h1>CONCORD TUTOR SCHOOL</h1>
+      <p>Complete Student Records - ${students.length} Students</p>
+      <p>Generated on: ${new Date().toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}</p>
+    </div>
+  `;
+  
+  // Add each student's record
+  students.forEach((student, index) => {
+    combinedHTML += `<div class="student-card">${generateStudentPrintableHTML(student)}</div>`;
+    if (index < students.length - 1) {
+      combinedHTML += '<div style="page-break-after: always;"></div>';
+    }
+  });
+  
+  combinedHTML += `
+    <div class="print-footer">
+      <p>Official Student Records - CONCORD TUTOR SCHOOL</p>
+      <p>End of Report - ${students.length} Students</p>
+    </div>
+  </body></html>`;
+  
+  // FIXED: Use a new window with better error handling
+  try {
+    // Create a new window
+    const printWindow = window.open('', '_blank');
+    
+    // Check if popup was blocked
+    if (!printWindow) {
+      alert('Please allow popups for this site to print. Your browser blocked the print window.');
+      return;
+    }
+    
+    // Write content to the window
+    printWindow.document.write(combinedHTML);
+    printWindow.document.close();
+    
+    // Wait for content to load before printing
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      // Don't close automatically - let user close after printing
+    };
+    
+    // Handle errors
+    printWindow.onerror = (err) => {
+      console.error('Print window error:', err);
+      alert('An error occurred while trying to print. Please try again.');
+    };
+    
+  } catch (error) {
+    console.error('Error creating print window:', error);
+    alert('Failed to open print window. Please check your browser settings and try again.');
+  }
+};
+
+
 // =====================
 // EXPORT ALL FUNCTIONS
 // =====================
@@ -829,6 +964,7 @@ const studentUtils = {
   generateRegistrationNumber,
   generateAdmissionNumber,
   formatFee,
+  printAllStudents,
 };
 
 export default studentUtils;

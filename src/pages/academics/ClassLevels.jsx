@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import Alert from '../../components/common/Alert';
-import Button from '../../components/common/Button';
 import Modal from '../../components/common/modal';
-import Input from '../../components/common/Input';
-import Select from '../../components/common/Select';
 import { 
   Layers, 
   Plus, 
@@ -14,15 +11,21 @@ import {
   RefreshCw,
   Search,
   Filter,
-  ChevronRight,
-  Hash,
-  Users,
+  Percent,
+  Award,
   CheckCircle,
-  AlertCircle,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Grid3x3,
+  Table2,
+  Users,
   School,
   BookOpen,
   GraduationCap,
-  Baby
+  Baby,
+  Hash,
+  AlertCircle
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import { 
@@ -34,6 +37,229 @@ import {
 } from '../../services/academicService';
 import { handleApiError } from '../../services/api';
 
+// ============================================
+// DESIGN SYSTEM COMPONENTS
+// ============================================
+
+// Typography (Sora font assumed via global CSS)
+const Text = ({ variant = 'body', children, className = '' }) => {
+  const variants = {
+    h1: 'text-2xl md:text-3xl font-bold',
+    h2: 'text-xl md:text-2xl font-semibold',
+    h3: 'text-lg md:text-xl font-semibold',
+    h4: 'text-base md:text-lg font-medium',
+    body: 'text-sm md:text-base',
+    small: 'text-xs md:text-sm',
+    caption: 'text-[10px] md:text-xs',
+    tiny: 'text-[9px] md:text-[10px]',
+  };
+  return <div className={`${variants[variant]} text-gray-800 ${className}`}>{children}</div>;
+};
+
+// Primary Button (#D94801)
+const Button = ({ children, variant = 'primary', size = 'medium', icon: Icon, onClick, loading, disabled, type = 'button', className = '' }) => {
+  const baseStyles = 'inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 ease rounded-xl cursor-pointer';
+  const variants = {
+    primary: 'bg-[#D94801] text-white hover:bg-[#C24000] active:bg-[#A93600] shadow-sm',
+    secondary: 'bg-[#1D2B49] text-white hover:bg-[#24385C] active:bg-[#324A74]',
+    outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
+    ghost: 'text-gray-600 hover:bg-gray-100',
+    danger: 'bg-red-600 text-white hover:bg-red-700',
+    success: 'bg-green-600 text-white hover:bg-green-700',
+  };
+  const sizes = {
+    large: 'h-12 px-5 text-sm',
+    medium: 'h-10 px-4 text-sm',
+    small: 'h-8 px-3 text-xs',
+    tiny: 'h-7 px-2 text-[10px]',
+  };
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled || loading}
+      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+    >
+      {loading && <RefreshCw size={14} className="animate-spin" />}
+      {Icon && !loading && <Icon size={size === 'tiny' ? 12 : size === 'small' ? 14 : 16} />}
+      {children}
+    </button>
+  );
+};
+
+// Card Component
+const Card = ({ children, className = '', hover = false }) => (
+  <div className={`bg-white rounded-2xl shadow-sm ${hover ? 'transition-shadow duration-200 hover:shadow-md' : ''} ${className}`}>
+    {children}
+  </div>
+);
+
+// Stat Card (Dashboard)
+const StatCard = ({ title, value, icon: Icon, color }) => (
+  <Card className="p-3">
+    <div className="flex items-center gap-3">
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
+        <Icon size={14} className="text-gray-600" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <Text variant="caption" className="text-gray-400 uppercase tracking-wide">{title}</Text>
+        <Text variant="h4" className="font-bold text-gray-800 leading-tight">{value}</Text>
+      </div>
+    </div>
+  </Card>
+);
+
+// Category Badge
+const CategoryBadge = ({ category }) => {
+  const config = {
+    creche: { bg: 'bg-rose-100', text: 'text-rose-700', label: 'Creche' },
+    nursery: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Nursery' },
+    primary: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Primary' },
+    jss: { bg: 'bg-cyan-100', text: 'text-cyan-700', label: 'JSS' },
+    sss: { bg: 'bg-green-100', text: 'text-green-700', label: 'SSS' },
+    other: { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Other' }
+  };
+  const c = config[category] || config.other;
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] md:text-[10px] font-medium ${c.bg} ${c.text}`}>
+      {c.label}
+    </span>
+  );
+};
+
+// Mobile Filter Sheet
+const MobileFilterSheet = ({ isOpen, onClose, searchTerm, setSearchTerm, filterCategory, setFilterCategory, filterOptions, onApply, onClear }) => {
+  const [localSearch, setLocalSearch] = useState(searchTerm);
+  const [localFilter, setLocalFilter] = useState(filterCategory);
+  if (!isOpen) return null;
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/50 z-50 transition-opacity" onClick={onClose} />
+      <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-50 p-5 animate-in slide-in-from-bottom duration-200 max-h-[80vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <Text variant="h4" className="font-semibold">Filter Class Levels</Text>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100"><X size={18} /></button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Search</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
+              <input type="text" value={localSearch} onChange={(e) => setLocalSearch(e.target.value)} placeholder="Search by name or code..." className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#D94801]" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
+            <select value={localFilter} onChange={(e) => setLocalFilter(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#D94801]">
+              {filterOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="primary" size="medium" onClick={() => { setSearchTerm(localSearch); setFilterCategory(localFilter); onApply(); onClose(); }} className="flex-1">Apply Filters</Button>
+            <button onClick={() => { setLocalSearch(''); setLocalFilter('all'); setSearchTerm(''); setFilterCategory('all'); onClear(); onClose(); }} className="px-4 py-2 text-red-500 font-medium text-sm">Clear</button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// Pagination Component
+const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+  if (totalPages <= 1) return null;
+  
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    return pages;
+  };
+
+  return (
+    <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-100 sticky bottom-0 bg-white z-10">
+      <Button variant="ghost" size="tiny" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>
+        <ChevronLeft size={14} /> Prev
+      </Button>
+      <div className="flex gap-1">
+        {getPageNumbers().map((page, idx) => (
+          page === '...' ? (
+            <span key={idx} className="px-2 py-1 text-xs text-gray-400">...</span>
+          ) : (
+            <button key={idx} onClick={() => onPageChange(page)} className={`min-w-[32px] h-8 rounded-lg text-xs font-medium transition-colors ${currentPage === page ? 'bg-[#D94801] text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+              {page}
+            </button>
+          )
+        ))}
+      </div>
+      <Button variant="ghost" size="tiny" onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}>
+        Next <ChevronRight size={14} />
+      </Button>
+    </div>
+  );
+};
+
+// Class Level Card Component (for mobile grid view)
+const ClassLevelCard = ({ level, getLevelLabel, getLevelIcon, getLevelCategory, onView, onEdit, onDelete, isAdmin }) => (
+  <Card className="p-3 space-y-2 hover:shadow-md transition-shadow duration-200 h-full">
+    <div className="flex justify-between items-start gap-2">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          {getLevelIcon(level.level)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <Text variant="tiny" className="font-bold text-gray-800 truncate">{level.name || 'Unnamed Level'}</Text>
+          <Text variant="caption" className="text-gray-400 font-mono text-[8px] md:text-[9px]">{level.code || 'No Code'}</Text>
+        </div>
+      </div>
+      <span className={`inline-flex px-1.5 py-0.5 rounded-full text-[7px] md:text-[8px] font-medium whitespace-nowrap flex-shrink-0 ${level.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+        {level.is_active ? 'Active' : 'Inactive'}
+      </span>
+    </div>
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <CategoryBadge category={getLevelCategory(level.level)} />
+      <Text variant="caption" className="text-gray-400 flex items-center gap-0.5 text-[8px] md:text-[9px]">
+        <Users size={8} /> {level.min_age || 0}-{level.max_age || 0}yrs
+      </Text>
+    </div>
+    <div>
+      <Text variant="caption" className="text-gray-500 text-[8px] md:text-[9px] truncate">
+        {level.program?.name || 'No Program'}
+      </Text>
+    </div>
+    <div className="flex justify-end gap-0.5 pt-1">
+      <button onClick={() => onView(level)} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"><Eye size={12} /></button>
+      {isAdmin && (
+        <>
+          <button onClick={() => onEdit(level)} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"><Edit size={12} /></button>
+          <button onClick={() => onDelete(level)} className="p-1.5 text-gray-500 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors"><Trash2 size={12} /></button>
+        </>
+      )}
+    </div>
+  </Card>
+);
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
 const ClassLevels = () => {
   const { user, isAdmin } = useAuth();
   const [classLevels, setClassLevels] = useState([]);
@@ -49,6 +275,11 @@ const ClassLevels = () => {
   const [levelToDelete, setLevelToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const [viewMode, setViewMode] = useState('table');
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   const [formData, setFormData] = useState({
     program: '',
@@ -95,11 +326,7 @@ const ClassLevels = () => {
     { value: 'sss', label: 'SSS' }
   ];
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [levelsData, programsData] = await Promise.all([
@@ -109,12 +336,18 @@ const ClassLevels = () => {
       
       setClassLevels(levelsData.results || levelsData || []);
       setPrograms(programsData.results || programsData || []);
+      setCurrentPage(1);
     } catch (err) {
+      console.error('❌ Error fetching class levels:', err);
       setError(handleApiError(err));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const checkDuplicateLevel = (programId, level, excludeId = null) => {
     return classLevels.some(cl => 
@@ -227,16 +460,12 @@ const ClassLevels = () => {
   };
 
   const getLevelIcon = (level) => {
-    if (level === 'creche') return <Baby size={16} className="text-gray-600" />;
-    if (['nursery_1', 'nursery_2', 'kg_1', 'kg_2'].includes(level)) return <Baby size={16} className="text-gray-600" />;
-    if (level.startsWith('primary')) return <School size={16} className="text-gray-600" />;
-    if (level.startsWith('jss')) return <BookOpen size={16} className="text-gray-600" />;
-    if (level.startsWith('sss')) return <GraduationCap size={16} className="text-gray-600" />;
-    return <Layers size={16} className="text-gray-600" />;
-  };
-
-  const getLevelColor = (level) => {
-    return 'text-gray-700 bg-gray-50 border-gray-200';
+    if (level === 'creche') return <Baby size={14} className="text-gray-600" />;
+    if (['nursery_1', 'nursery_2', 'kg_1', 'kg_2'].includes(level)) return <Baby size={14} className="text-gray-600" />;
+    if (level.startsWith('primary')) return <School size={14} className="text-gray-600" />;
+    if (level.startsWith('jss')) return <BookOpen size={14} className="text-gray-600" />;
+    if (level.startsWith('sss')) return <GraduationCap size={14} className="text-gray-600" />;
+    return <Layers size={14} className="text-gray-600" />;
   };
 
   const filteredClassLevels = classLevels.filter(level => {
@@ -252,6 +481,10 @@ const ClassLevels = () => {
     return matchesSearch && matchesFilter;
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredClassLevels.length / itemsPerPage);
+  const paginatedLevels = filteredClassLevels.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const stats = {
     total: classLevels.length,
     active: classLevels.filter(l => l.is_active).length,
@@ -261,565 +494,508 @@ const ClassLevels = () => {
       : 0
   };
 
-  if (loading) {
+  const hasActiveFilters = searchTerm || filterCategory !== 'all';
+
+  // Detect mobile screen
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const displayViewMode = isMobile ? 'card' : viewMode;
+
+  if (loading && classLevels.length === 0) {
     return (
       <DashboardLayout title="Class Levels">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <RefreshCw className="animate-spin h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600">Loading class levels...</p>
+            <RefreshCw className="animate-spin h-8 w-8 text-[#D94801] mx-auto mb-4" />
+            <Text variant="body" className="text-gray-400">Loading class levels from database...</Text>
           </div>
         </div>
       </DashboardLayout>
     );
   }
 
-  const statsCards = [
-    {
-      title: 'Total Levels',
-      value: stats.total,
-      icon: Layers,
-      color: 'bg-gray-50',
-      iconColor: 'text-gray-700',
-      detail: 'Class levels'
-    },
-    {
-      title: 'Active Levels',
-      value: stats.active,
-      icon: CheckCircle,
-      color: 'bg-gray-50',
-      iconColor: 'text-green-600',
-      detail: 'Currently active'
-    },
-    {
-      title: 'Primary Levels',
-      value: stats.primary,
-      icon: School,
-      color: 'bg-gray-50',
-      iconColor: 'text-gray-700',
-      detail: 'Primary school levels'
-    },
-    {
-      title: 'Avg Start Age',
-      value: `${stats.avgMinAge} yrs`,
-      icon: Users,
-      color: 'bg-gray-50',
-      iconColor: 'text-gray-700',
-      detail: 'Average starting age'
-    }
-  ];
-
   return (
     <DashboardLayout title="Class Levels">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between">
-          
-          <div className="flex space-x-3 mt-4 md:mt-0">
-            <Button
-              onClick={fetchData}
-              variant="outline"
-              className="flex items-center border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900"
-            >
-              <RefreshCw size={18} className="mr-2" />
-              Refresh
-            </Button>
-            <Button
-              onClick={() => {
-                resetForm();
-                setIsModalOpen(true);
-              }}
-              variant="primary"
-              className="flex items-center"
-            >
-              <Plus size={18} className="mr-2" />
-              Add Class Level
-            </Button>
-          </div>
-        </div>
-
-        {/* Alerts */}
-        {error && (
-          <Alert type="error" message={error} onClose={() => setError('')} />
-        )}
-        {success && (
-          <Alert type="success" message={success} onClose={() => setSuccess('')} />
-        )}
-
-        {/* Search and Filter */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <div className="flex flex-col md:flex-row md:items-center space-y-3 md:space-y-0 md:space-x-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <Input
-                  type="text"
-                  placeholder="Search class levels by name or code..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+      {/* Fixed height container with internal scrolling - only table/card scrolls */}
+      <div className="h-[calc(100vh-120px)] flex flex-col px-3 sm:px-4 lg:px-6">
+        
+        {/* STICKY HEADER SECTION - Everything above the table/card stays fixed */}
+        <div className="sticky top-0 z-20 bg-gray-50 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 pt-4 pb-2">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#1D2B49] rounded-xl flex items-center justify-center shadow-sm">
+                  <Layers size={14} className="text-white" />
+                </div>
+                <Text variant="h2" className="font-bold">Class Levels</Text>
               </div>
+              <Text variant="caption" className="text-gray-400 pl-9">
+                Manage school class levels and grades • {classLevels.length} total levels
+              </Text>
             </div>
-            <div className="flex items-center space-x-2">
-              <Filter size={18} className="text-gray-500" />
-              <span className="text-sm text-gray-600">Filter:</span>
-              <select 
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="small" icon={RefreshCw} onClick={fetchData} loading={loading}>
+                Refresh
+              </Button>
+              <Button variant="primary" size="small" icon={Plus} onClick={() => { resetForm(); setIsModalOpen(true); }}>
+                Add
+              </Button>
+            </div>
+          </div>
+
+          {/* Alerts */}
+          {error && (
+            <div className="mb-3">
+              <Alert type="error" message={error} onClose={() => setError('')} />
+            </div>
+          )}
+          {success && (
+            <div className="mb-3">
+              <Alert type="success" message={success} onClose={() => setSuccess('')} />
+            </div>
+          )}
+
+          {/* Stats Cards - Responsive grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3">
+            <StatCard title="Total Levels" value={stats.total} icon={Layers} color="bg-gray-100" />
+            <StatCard title="Active Levels" value={stats.active} icon={CheckCircle} color="bg-green-100" />
+            <StatCard title="Primary Levels" value={stats.primary} icon={School} color="bg-blue-100" />
+            <StatCard title="Avg Start Age" value={`${stats.avgMinAge} yrs`} icon={Users} color="bg-purple-100" />
+          </div>
+
+          {/* Search and Filter Bar */}
+          <div className="flex flex-col sm:flex-row gap-2 mb-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                placeholder="Search class levels by name or code..."
+                className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#D94801] focus:border-transparent"
+              />
+            </div>
+            
+            {/* Desktop filters */}
+            <div className="hidden sm:flex items-center gap-2">
+              <select
                 value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
+                onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
+                className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#D94801]"
               >
-                {filterOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
+                {filterOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
               </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {statsCards.map((stat, index) => (
-            <div key={index} className="bg-white border border-gray-200 rounded-xl p-4">
-              <div className="flex items-center">
-                <div className={`w-10 h-10 ${stat.color} rounded-lg flex items-center justify-center mr-3`}>
-                  <stat.icon className={stat.iconColor} size={20} />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">{stat.title}</p>
-                  <p className="text-xl font-bold text-gray-800">{stat.value}</p>
-                  {stat.detail && (
-                    <p className="text-xs text-gray-500 mt-1">{stat.detail}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Class Levels Table */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Class Level Details
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Level
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Program
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Age Range
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredClassLevels.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center">
-                      <div className="flex flex-col items-center">
-                        <Layers className="h-12 w-12 text-gray-400 mb-3" />
-                        <h3 className="text-sm font-medium text-gray-900 mb-1">No class levels found</h3>
-                        <p className="text-sm text-gray-500">Get started by creating a new class level.</p>
-                        <Button
-                          onClick={() => {
-                            resetForm();
-                            setIsModalOpen(true);
-                          }}
-                          variant="primary"
-                          className="mt-4"
-                        >
-                          <Plus size={18} className="mr-2" />
-                          Add Class Level
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredClassLevels.map((level) => (
-                    <tr key={level.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-start">
-                          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3 mt-1">
-                            <Layers size={18} className="text-gray-700" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{level.name || 'Unnamed Level'}</div>
-                            <div className="text-sm text-gray-500">{level.code || 'No Code'}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          {getLevelIcon(level.level)}
-                          <span className={`ml-2 px-2 py-1 text-xs font-medium rounded border ${getLevelColor(level.level)}`}>
-                            {getLevelLabel(level.level)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
-                          {level.program?.name || 'No Program'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <Users size={16} className="text-gray-500 mr-2" />
-                          <span className="text-sm text-gray-900">
-                            {level.min_age || 0}-{level.max_age || 0} years
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <Hash size={16} className="text-gray-500 mr-2" />
-                          <span className="text-sm text-gray-900">{level.order || 0}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleView(level)}
-                            className="text-gray-600 hover:text-gray-900 flex items-center"
-                            title="View details"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          {isAdmin && (
-                            <>
-                              <button
-                                onClick={() => handleEdit(level)}
-                                className="text-gray-600 hover:text-gray-900 flex items-center"
-                                title="Edit class level"
-                              >
-                                <Edit size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteClick(level)}
-                                className="text-gray-600 hover:text-red-700 flex items-center"
-                                title="Delete class level"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          {filteredClassLevels.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">
-                  Showing <span className="font-medium">{filteredClassLevels.length}</span> of{' '}
-                  <span className="font-medium">{classLevels.length}</span> levels
-                </p>
-                <button className="text-sm text-gray-600 hover:text-gray-900 flex items-center">
-                  View all
-                  <ChevronRight size={16} className="ml-1" />
+              {hasActiveFilters && (
+                <Button variant="ghost" size="tiny" onClick={() => { setSearchTerm(''); setFilterCategory('all'); }}>
+                  Clear
+                </Button>
+              )}
+              {/* View Toggle (desktop only) */}
+              <div className="flex border border-gray-200 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`p-2 transition-colors ${viewMode === 'table' ? 'bg-[#D94801] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                >
+                  <Table2 size={16} />
+                </button>
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`p-2 transition-colors ${viewMode === 'card' ? 'bg-[#D94801] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                >
+                  <Grid3x3 size={16} />
                 </button>
               </div>
             </div>
-          )}
-        </div>
-      </div>
+            
+            {/* Mobile filter button */}
+            <button
+              onClick={() => setShowMobileFilter(true)}
+              className="sm:hidden flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 bg-white text-gray-700 rounded-xl text-sm font-medium"
+            >
+              <Filter size={14} /> Filter {hasActiveFilters && <span className="w-2 h-2 bg-[#D94801] rounded-full" />}
+            </button>
+          </div>
 
-      {/* Create/Edit Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          resetForm();
-        }}
-        title={editingClassLevel ? 'Edit Class Level' : 'Create Class Level'}
-        size="lg"
-      >
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
+          <MobileFilterSheet
+            isOpen={showMobileFilter}
+            onClose={() => setShowMobileFilter(false)}
+            searchTerm={searchTerm}
+            setSearchTerm={(val) => { setSearchTerm(val); setCurrentPage(1); }}
+            filterCategory={filterCategory}
+            setFilterCategory={(val) => { setFilterCategory(val); setCurrentPage(1); }}
+            filterOptions={filterOptions}
+            onApply={fetchData}
+            onClear={() => { setSearchTerm(''); setFilterCategory('all'); fetchData(); }}
+          />
+        </div>
+
+        {/* SCROLLABLE CONTENT SECTION - Only table/card scrolls here */}
+        <div className="flex-1 overflow-y-auto min-h-0 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 pb-4">
+          <Card className="overflow-hidden">
+            {paginatedLevels.length === 0 ? (
+              <div className="p-8 text-center">
+                <Layers size={32} className="mx-auto text-gray-200 mb-2" />
+                <Text variant="body" className="text-gray-400">No class levels found</Text>
+                {hasActiveFilters ? (
+                  <Button variant="outline" size="small" className="mt-3" onClick={() => { setSearchTerm(''); setFilterCategory('all'); }}>
+                    Clear Filters
+                  </Button>
+                ) : (
+                  <Button variant="primary" size="small" className="mt-3" onClick={() => { resetForm(); setIsModalOpen(true); }}>
+                    Create your first class level
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Desktop Table View */}
+                {displayViewMode === 'table' && !isMobile && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b border-gray-100 sticky top-0 z-10">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Class Level</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Level</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider hidden md:table-cell">Program</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Age Range</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Order</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-4 py-3 text-right text-[10px] font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {paginatedLevels.map((level) => (
+                          <tr key={level.id} className="hover:bg-gray-50 transition-colors duration-150">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                  {getLevelIcon(level.level)}
+                                </div>
+                                <div>
+                                  <Text variant="small" className="font-medium text-gray-800">{level.name || 'Unnamed Level'}</Text>
+                                  <Text variant="caption" className="text-gray-400 font-mono">{level.code || 'No Code'}</Text>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 hidden sm:table-cell">
+                              <CategoryBadge category={getLevelCategory(level.level)} />
+                            </td>
+                            <td className="px-4 py-3 hidden md:table-cell">
+                              <Text variant="caption" className="text-gray-600">{level.program?.name || 'No Program'}</Text>
+                            </td>
+                            <td className="px-4 py-3">
+                              <Text variant="caption" className="text-gray-600 flex items-center gap-1">
+                                <Users size={10} /> {level.min_age || 0}-{level.max_age || 0} yrs
+                              </Text>
+                            </td>
+                            <td className="px-4 py-3 hidden sm:table-cell">
+                              <Text variant="caption" className="text-gray-600 flex items-center gap-1">
+                                <Hash size={10} /> {level.order || 0}
+                              </Text>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-medium ${level.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                {level.is_active ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button onClick={() => handleView(level)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg transition-colors">
+                                  <Eye size={14} />
+                                </button>
+                                {isAdmin && (
+                                  <>
+                                    <button onClick={() => handleEdit(level)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg transition-colors">
+                                      <Edit size={14} />
+                                    </button>
+                                    <button onClick={() => handleDeleteClick(level)} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg transition-colors">
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Card View - For mobile (2 per row) and desktop when toggled */}
+                {(displayViewMode === 'card' || isMobile) && (
+                  <div className="p-3">
+                    {/* Mobile: 2 columns, Tablet: 3 columns, Desktop: 4 columns */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                      {paginatedLevels.map((level) => (
+                        <ClassLevelCard
+                          key={level.id}
+                          level={level}
+                          getLevelLabel={getLevelLabel}
+                          getLevelIcon={getLevelIcon}
+                          getLevelCategory={getLevelCategory}
+                          onView={handleView}
+                          onEdit={handleEdit}
+                          onDelete={handleDeleteClick}
+                          isAdmin={isAdmin}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                )}
+                
+                {/* Showing info */}
+                <div className="px-4 py-2 border-t border-gray-100 text-center">
+                  <Text variant="caption" className="text-gray-400">
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredClassLevels.length)} of {filteredClassLevels.length} class levels
+                  </Text>
+                </div>
+              </>
+            )}
+          </Card>
+        </div>
+
+        {/* Create/Edit Modal */}
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            resetForm();
+          }}
+          title={editingClassLevel ? 'Edit Class Level' : 'Create Class Level'}
+          size="lg"
+        >
+          <form onSubmit={handleSubmit} className="py-3 space-y-4 max-h-[70vh] overflow-y-auto px-1">
             {/* Validation Warning */}
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-start">
               <AlertCircle size={18} className="text-gray-600 mr-2 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-gray-800">
+              <Text variant="caption" className="text-gray-800">
                 Each program can only have one instance of each level. For example, you cannot create two "Primary 1" levels under the same program.
-              </p>
+              </Text>
             </div>
 
-            <Select
-              label="Program *"
-              value={formData.program}
-              onChange={(e) => setFormData({...formData, program: e.target.value})}
-              options={[
-                { value: '', label: 'Select program' }, 
-                ...programs.map(p => ({ 
-                  value: p.id, 
-                  label: p.name 
-                }))
-              ]}
-              required
-            />
-            
-            <Select
-              label="Level *"
-              value={formData.level}
-              onChange={(e) => setFormData({...formData, level: e.target.value})}
-              options={levelOptions}
-              required
-            />
-            
-            <Input
-              label="Class Level Name *"
-              placeholder="e.g., Primary 1"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              required
-            />
-            
             <div>
-              <Input
-                label="Class Code *"
-                placeholder="e.g., PRI1"
-                value={formData.code}
-                onChange={(e) => setFormData({...formData, code: e.target.value})}
+              <label className="block text-[10px] font-medium text-gray-500 mb-1">Program *</label>
+              <select
+                value={formData.program}
+                onChange={(e) => setFormData({...formData, program: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#D94801]"
                 required
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Unique code for this class level
-              </p>
+              >
+                <option value="">Select program</option>
+                {programs.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Input
-                type="number"
-                label="Order"
-                value={formData.order}
-                onChange={(e) => setFormData({...formData, order: parseInt(e.target.value) || 0})}
-                min="0"
+            <div>
+              <label className="block text-[10px] font-medium text-gray-500 mb-1">Level *</label>
+              <select
+                value={formData.level}
+                onChange={(e) => setFormData({...formData, level: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#D94801]"
+                required
+              >
+                {levelOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-[10px] font-medium text-gray-500 mb-1">Class Level Name *</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                placeholder="e.g., Primary 1"
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#D94801]"
+                required
               />
+            </div>
+            
+            <div>
+              <label className="block text-[10px] font-medium text-gray-500 mb-1">Class Code *</label>
+              <input
+                type="text"
+                value={formData.code}
+                onChange={(e) => setFormData({...formData, code: e.target.value})}
+                placeholder="e.g., PRI1"
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#D94801]"
+                required
+              />
+              <p className="mt-1 text-[8px] text-gray-500">Unique code for this class level</p>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[10px] font-medium text-gray-500 mb-1">Order</label>
+                <input
+                  type="number"
+                  value={formData.order}
+                  onChange={(e) => setFormData({...formData, order: parseInt(e.target.value) || 0})}
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm"
+                />
+              </div>
               
-              <Input
-                type="number"
-                label="Minimum Age"
-                value={formData.min_age}
-                onChange={(e) => setFormData({...formData, min_age: parseInt(e.target.value) || 0})}
-                min="0"
-              />
+              <div>
+                <label className="block text-[10px] font-medium text-gray-500 mb-1">Min Age</label>
+                <input
+                  type="number"
+                  value={formData.min_age}
+                  onChange={(e) => setFormData({...formData, min_age: parseInt(e.target.value) || 0})}
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm"
+                />
+              </div>
               
-              <Input
-                type="number"
-                label="Maximum Age"
-                value={formData.max_age}
-                onChange={(e) => setFormData({...formData, max_age: parseInt(e.target.value) || 0})}
-                min="0"
-              />
+              <div>
+                <label className="block text-[10px] font-medium text-gray-500 mb-1">Max Age</label>
+                <input
+                  type="number"
+                  value={formData.max_age}
+                  onChange={(e) => setFormData({...formData, max_age: parseInt(e.target.value) || 0})}
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm"
+                />
+              </div>
             </div>
             
             <div className="flex items-center">
-              <label className="flex items-center">
+              <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={formData.is_active}
                   onChange={(e) => setFormData({...formData, is_active: e.target.checked})}
-                  className="h-4 w-4 text-gray-700 rounded border-gray-300"
+                  className="w-3 h-3 rounded border-gray-300"
                 />
-                <span className="ml-2 text-sm text-gray-700">
-                  Class level is active
-                </span>
+                <span className="text-[10px] text-gray-700">Class level is active</span>
               </label>
             </div>
-          </div>
-          
-          <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => {
-                setIsModalOpen(false);
-                resetForm();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary">
-              {editingClassLevel ? 'Update Class Level' : 'Create Class Level'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* View Details Modal */}
-      <Modal
-        isOpen={isViewModalOpen}
-        onClose={() => {
-          setIsViewModalOpen(false);
-          setSelectedLevel(null);
-        }}
-        title="Class Level Details"
-        size="md"
-      >
-        {selectedLevel && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center mb-2">
-                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                  <Layers size={20} className="text-gray-700" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900">{selectedLevel.name || 'Unnamed Level'}</h4>
-                  <p className="text-sm text-gray-600">{selectedLevel.code || 'No Code'}</p>
-                </div>
-              </div>
-            </div>
             
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Level</p>
-                  <div className="flex items-center mt-1">
-                    {getLevelIcon(selectedLevel.level)}
-                    <span className="ml-2 text-sm font-medium text-gray-900">
-                      {getLevelLabel(selectedLevel.level)}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Program</p>
-                  <p className="text-sm font-medium text-gray-900 mt-1">
-                    {selectedLevel.program?.name || 'No Program'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Order</p>
-                  <div className="flex items-center mt-1">
-                    <Hash size={16} className="text-gray-500 mr-2" />
-                    <span className="text-sm font-medium text-gray-900">
-                      {selectedLevel.order || 0}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Age Range</p>
-                  <div className="flex items-center mt-1">
-                    <Users size={16} className="text-gray-500 mr-2" />
-                    <span className="text-sm font-medium text-gray-900">
-                      {selectedLevel.min_age || 0}-{selectedLevel.max_age || 0} years
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <p className="text-sm text-gray-500">Status</p>
-                <span className={`mt-1 inline-block px-2 py-1 text-xs font-medium rounded border ${
-                  selectedLevel.is_active 
-                    ? 'text-green-700 bg-green-50 border-green-200' 
-                    : 'text-gray-700 bg-gray-50 border-gray-200'
-                }`}>
-                  {selectedLevel.is_active ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-            </div>
-            
-            <div className="flex justify-end pt-4 border-t border-gray-200">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsViewModalOpen(false);
-                  setSelectedLevel(null);
-                }}
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setLevelToDelete(null);
-        }}
-        title="Confirm Delete"
-        size="sm"
-      >
-        {levelToDelete && (
-          <div className="space-y-4">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="text-red-600" size={24} />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Class Level</h3>
-              <p className="text-sm text-gray-600">
-                Are you sure you want to delete "<span className="font-medium">{levelToDelete.name || 'Unnamed Level'}</span>"? 
-                This action cannot be undone.
-              </p>
-            </div>
-            
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="flex items-center mb-2">
-                {getLevelIcon(levelToDelete.level)}
-                <span className="ml-2 text-sm font-medium text-gray-900">
-                  {getLevelLabel(levelToDelete.level)}
-                </span>
-              </div>
-              <div className="flex items-center mb-2">
-                <School size={16} className="text-gray-500 mr-2" />
-                <p className="text-sm text-gray-600">
-                  {levelToDelete.program?.name || 'No Program'}
-                </p>
-              </div>
-              <div className="flex items-center">
-                <Users size={16} className="text-gray-500 mr-2" />
-                <span className="text-sm text-gray-600">
-                  {levelToDelete.min_age || 0}-{levelToDelete.max_age || 0} years
-                </span>
-              </div>
-            </div>
-            
-            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  setIsDeleteModalOpen(false);
-                  setLevelToDelete(null);
-                }}
-              >
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" onClick={() => { setIsModalOpen(false); resetForm(); }} className="flex-1">
                 Cancel
               </Button>
-              <Button 
-                type="button" 
-                variant="danger"
-                onClick={handleDelete}
-              >
-                Delete Level
+              <Button variant="primary" type="submit" className="flex-1">
+                {editingClassLevel ? 'Update' : 'Create'}
               </Button>
             </div>
-          </div>
-        )}
-      </Modal>
+          </form>
+        </Modal>
+
+        {/* View Details Modal */}
+        <Modal
+          isOpen={isViewModalOpen}
+          onClose={() => {
+            setIsViewModalOpen(false);
+            setSelectedLevel(null);
+          }}
+          title="Class Level Details"
+          size="sm"
+        >
+          {selectedLevel && (
+            <div className="py-3 space-y-3">
+              <div className="bg-gray-50 rounded-xl p-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                    {getLevelIcon(selectedLevel.level)}
+                  </div>
+                  <div>
+                    <Text variant="h4" className="font-bold">{selectedLevel.name || 'Unnamed Level'}</Text>
+                    <Text variant="caption" className="text-gray-400 font-mono">{selectedLevel.code || 'No Code'}</Text>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <Text variant="caption" className="text-gray-400">Level</Text>
+                  <CategoryBadge category={getLevelCategory(selectedLevel.level)} />
+                </div>
+                <div>
+                  <Text variant="caption" className="text-gray-400">Program</Text>
+                  <Text variant="small" className="font-medium">{selectedLevel.program?.name || 'No Program'}</Text>
+                </div>
+                <div>
+                  <Text variant="caption" className="text-gray-400">Order</Text>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Hash size={12} className="text-gray-400" />
+                    <Text variant="small" className="font-medium">{selectedLevel.order || 0}</Text>
+                  </div>
+                </div>
+                <div>
+                  <Text variant="caption" className="text-gray-400">Age Range</Text>
+                  <div className="flex items-center gap-1 mt-1">
+                    <Users size={12} className="text-gray-400" />
+                    <Text variant="small" className="font-medium">{selectedLevel.min_age || 0}-{selectedLevel.max_age || 0} years</Text>
+                  </div>
+                </div>
+                <div>
+                  <Text variant="caption" className="text-gray-400">Status</Text>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-medium mt-1 ${selectedLevel.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {selectedLevel.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button variant="outline" size="small" onClick={() => { setIsViewModalOpen(false); setSelectedLevel(null); }}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setLevelToDelete(null);
+          }}
+          title="Delete Class Level"
+          size="sm"
+        >
+          {levelToDelete && (
+            <div className="py-4 text-center">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Trash2 size={18} className="text-red-600" />
+              </div>
+              <Text variant="h4" className="font-semibold mb-1">Delete "{levelToDelete.name || 'Unnamed Level'}"?</Text>
+              <Text variant="caption" className="text-gray-500 mb-4 block">This action cannot be undone.</Text>
+              <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  {getLevelIcon(levelToDelete.level)}
+                  <Text variant="caption" className="font-medium">{getLevelLabel(levelToDelete.level)}</Text>
+                </div>
+                <Text variant="caption" className="text-gray-600 text-center block">
+                  {levelToDelete.program?.name || 'No Program'}
+                </Text>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => { setIsDeleteModalOpen(false); setLevelToDelete(null); }} className="flex-1">
+                  Cancel
+                </Button>
+                <Button variant="danger" onClick={handleDelete} className="flex-1">
+                  Delete
+                </Button>
+              </div>
+            </div>
+          )}
+        </Modal>
+      </div>
     </DashboardLayout>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import Alert from '../../components/common/Alert';
 import Button from '../../components/common/Button';
@@ -15,7 +15,9 @@ import {
   Layers,
   FileText,
   ChevronRight,
-  Eye
+  Eye,
+  X,
+  CheckCircle
 } from 'lucide-react';
 import { 
   getAcademicSessions,
@@ -28,6 +30,97 @@ import {
 import { handleApiError } from '../../services/api';
 import { Link } from 'react-router-dom';
 
+// ============================================
+// DESIGN SYSTEM COMPONENTS
+// ============================================
+
+// Typography (Sora font assumed via global CSS)
+const Text = ({ variant = 'body', children, className = '' }) => {
+  const variants = {
+    h1: 'text-2xl md:text-3xl font-bold',
+    h2: 'text-xl md:text-2xl font-semibold',
+    h3: 'text-lg md:text-xl font-semibold',
+    h4: 'text-base md:text-lg font-medium',
+    body: 'text-sm md:text-base',
+    small: 'text-xs md:text-sm',
+    caption: 'text-[10px] md:text-xs',
+    tiny: 'text-[9px] md:text-[10px]',
+  };
+  return <div className={`${variants[variant]} text-gray-800 ${className}`}>{children}</div>;
+};
+
+// Primary Button (#D94801)
+const CustomButton = ({ children, variant = 'primary', size = 'medium', icon: Icon, onClick, loading, disabled, type = 'button', className = '' }) => {
+  const baseStyles = 'inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 ease rounded-xl cursor-pointer';
+  const variants = {
+    primary: 'bg-[#D94801] text-white hover:bg-[#C24000] active:bg-[#A93600] shadow-sm',
+    secondary: 'bg-[#1D2B49] text-white hover:bg-[#24385C] active:bg-[#324A74]',
+    outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
+    ghost: 'text-gray-600 hover:bg-gray-100',
+    danger: 'bg-red-600 text-white hover:bg-red-700',
+    success: 'bg-green-600 text-white hover:bg-green-700',
+  };
+  const sizes = {
+    large: 'h-12 px-5 text-sm',
+    medium: 'h-10 px-4 text-sm',
+    small: 'h-8 px-3 text-xs',
+    tiny: 'h-7 px-2 text-[10px]',
+  };
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled || loading}
+      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+    >
+      {loading && <RefreshCw size={14} className="animate-spin" />}
+      {Icon && !loading && <Icon size={size === 'tiny' ? 12 : size === 'small' ? 14 : 16} />}
+      {children}
+    </button>
+  );
+};
+
+// Card Component
+const Card = ({ children, className = '', hover = false }) => (
+  <div className={`bg-white rounded-2xl shadow-sm ${hover ? 'transition-shadow duration-200 hover:shadow-md' : ''} ${className}`}>
+    {children}
+  </div>
+);
+
+// Stat Card
+const StatCard = ({ title, value, icon: Icon, color, link }) => (
+  <Link to={link}>
+    <Card className="p-4 hover:shadow-md transition-all duration-200 cursor-pointer h-full">
+      <div className="flex flex-col items-center text-center">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-2 ${color}`}>
+          <Icon size={22} className="text-gray-700" />
+        </div>
+        <Text variant="h3" className="font-bold text-gray-800">{value}</Text>
+        <Text variant="caption" className="text-gray-500 mt-1">{title}</Text>
+      </div>
+    </Card>
+  </Link>
+);
+
+// Status Badge
+const StatusBadge = ({ status }) => {
+  const config = {
+    active: { bg: 'bg-green-100', text: 'text-green-700', label: 'ACTIVE' },
+    upcoming: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'UPCOMING' },
+    completed: { bg: 'bg-gray-100', text: 'text-gray-600', label: 'COMPLETED' },
+    archived: { bg: 'bg-gray-100', text: 'text-gray-500', label: 'ARCHIVED' }
+  };
+  const c = config[status] || config.upcoming;
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] md:text-[10px] font-medium ${c.bg} ${c.text}`}>
+      {c.label}
+    </span>
+  );
+};
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
 const AcademicYear = () => {
   const [statistics, setStatistics] = useState({
     totalSessions: 0,
@@ -49,11 +142,7 @@ const AcademicYear = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedDetails, setSelectedDetails] = useState(null);
   
-  useEffect(() => {
-    fetchAcademicData();
-  }, []);
-
-  const fetchAcademicData = async () => {
+  const fetchAcademicData = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -136,7 +225,11 @@ const AcademicYear = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAcademicData();
+  }, [fetchAcademicData]);
 
   const calculateYearProgress = () => {
     if (!currentSession || !currentSession.start_date || !currentSession.end_date) {
@@ -169,6 +262,15 @@ const AcademicYear = () => {
     return Math.max(0, diffDays);
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   const showSessionDetails = (session) => {
     setSelectedDetails({
       type: 'session',
@@ -187,155 +289,102 @@ const AcademicYear = () => {
     setDetailsModalOpen(true);
   };
 
+  const yearProgress = calculateYearProgress();
+  const daysRemaining = calculateDaysRemaining();
+
+  const statsCards = [
+    { title: 'Sessions', value: statistics.totalSessions, icon: Calendar, color: 'bg-gray-100', link: '/academics/sessions' },
+    { title: 'Terms', value: statistics.totalTerms, icon: Clock, color: 'bg-gray-100', link: '/academics/terms' },
+    { title: 'Programs', value: statistics.totalPrograms, icon: Layers, color: 'bg-gray-100', link: '/academics/programs' },
+    { title: 'Class Levels', value: statistics.totalClassLevels, icon: GraduationCap, color: 'bg-gray-100', link: '/academics/class-levels' },
+    { title: 'Classes', value: statistics.totalClasses, icon: School, color: 'bg-gray-100', link: '/academics/classes' },
+    { title: 'Subjects', value: statistics.totalSubjects, icon: Book, color: 'bg-gray-100', link: '/academics/subjects' }
+  ];
+
   if (loading) {
     return (
       <DashboardLayout title="Academic Year">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <RefreshCw className="animate-spin h-8 w-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600">Loading academic data...</p>
+            <RefreshCw className="animate-spin h-8 w-8 text-[#D94801] mx-auto mb-4" />
+            <Text variant="body" className="text-gray-400">Loading academic data...</Text>
           </div>
         </div>
       </DashboardLayout>
     );
   }
 
-  const yearProgress = calculateYearProgress();
-  const daysRemaining = calculateDaysRemaining();
-
-  const statsCards = [
-    {
-      title: 'Sessions',
-      value: statistics.totalSessions,
-      icon: Calendar,
-      color: 'bg-gray-50',
-      iconColor: 'text-gray-600',
-      link: '/academics/sessions'
-    },
-    {
-      title: 'Terms',
-      value: statistics.totalTerms,
-      icon: Clock,
-      color: 'bg-gray-50',
-      iconColor: 'text-gray-600',
-      link: '/academics/terms'
-    },
-    {
-      title: 'Programs',
-      value: statistics.totalPrograms,
-      icon: Layers,
-      color: 'bg-gray-50',
-      iconColor: 'text-gray-600',
-      link: '/academics/programs'
-    },
-    {
-      title: 'Class Levels',
-      value: statistics.totalClassLevels,
-      icon: GraduationCap,
-      color: 'bg-gray-50',
-      iconColor: 'text-gray-600',
-      link: '/academics/class-levels'
-    },
-    {
-      title: 'Classes',
-      value: statistics.totalClasses,
-      icon: School,
-      color: 'bg-gray-50',
-      iconColor: 'text-gray-600',
-      link: '/academics/classes'
-    },
-    {
-      title: 'Subjects',
-      value: statistics.totalSubjects,
-      icon: Book,
-      color: 'bg-gray-50',
-      iconColor: 'text-gray-600',
-      link: '/academics/subjects'
-    }
-  ];
-
   return (
     <DashboardLayout title="Academic Year">
-      <div className="space-y-6">
+      <div className="space-y-4 pb-10 px-3 sm:px-4 lg:px-6">
+        
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between">         
-          
-          <div className="flex space-x-3 mt-4 md:mt-0">
-            <Button
-              onClick={fetchAcademicData}
-              variant="outline"
-              className="flex items-center border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900"
-            >
-              <RefreshCw size={18} className="mr-2" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#1D2B49] rounded-xl flex items-center justify-center shadow-sm">
+                <Award size={14} className="text-white" />
+              </div>
+              <Text variant="h2" className="font-bold">Academic Year</Text>
+            </div>
+            <Text variant="caption" className="text-gray-400 pl-9">
+              Manage school academic calendar and structure
+            </Text>
+          </div>
+          <div className="flex items-center gap-2">
+            <CustomButton variant="outline" size="small" icon={RefreshCw} onClick={fetchAcademicData} loading={loading}>
               Refresh
-            </Button>
+            </CustomButton>
             <Link to="/academics/sessions">
-              <Button variant="primary" className="flex items-center">
-                <Calendar size={18} className="mr-2" />
+              <CustomButton variant="primary" size="small" icon={Calendar}>
                 Manage Academics
-              </Button>
+              </CustomButton>
             </Link>
           </div>
         </div>
 
-        {/* Error Alert */}
+        {/* Alerts */}
         {error && (
-          <div className="mb-4">
-            <Alert
-              type="error"
-              message={error}
-              onClose={() => setError('')}
-            />
-          </div>
+          <Alert type="error" message={error} onClose={() => setError('')} />
         )}
-
-        {/* Success Alert */}
         {success && (
-          <div className="mb-4">
-            <Alert
-              type="success"
-              message={success}
-              onClose={() => setSuccess('')}
-            />
-          </div>
+          <Alert type="success" message={success} onClose={() => setSuccess('')} />
         )}
 
         {/* Current Academic Status */}
         {currentSession && (
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-              <div className="mb-6 lg:mb-0 lg:pr-8">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4">
+          <Card className="p-4 sm:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
                     <Calendar size={24} className="text-gray-700" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-800">
-                      {currentSession.name || 'No Active Session'}
-                    </h2>
-                    <p className="text-gray-600 text-sm mt-1">
-                      {currentSession.start_date ? new Date(currentSession.start_date).toLocaleDateString() : 'Start date not set'} - {currentSession.end_date ? new Date(currentSession.end_date).toLocaleDateString() : 'End date not set'}
-                    </p>
+                    <Text variant="h4" className="font-bold">{currentSession.name || 'No Active Session'}</Text>
+                    <Text variant="caption" className="text-gray-500">
+                      {formatDate(currentSession.start_date)} - {formatDate(currentSession.end_date)}
+                    </Text>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center">
-                    <div className={`w-2 h-2 ${currentTerm ? 'bg-green-500' : 'bg-yellow-500'} rounded-full mr-3`}></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 ${currentTerm ? 'bg-green-500' : 'bg-yellow-500'} rounded-full`}></div>
                     <div>
-                      <p className="text-sm text-gray-600">Current Status</p>
-                      <p className="text-sm font-medium text-gray-800">
+                      <Text variant="caption" className="text-gray-500">Current Status</Text>
+                      <Text variant="small" className="font-medium text-gray-800">
                         {currentTerm ? currentTerm.name : (currentSession.status === 'active' ? 'Active Session' : currentSession.status || 'Unknown')}
-                      </p>
+                      </Text>
                     </div>
                   </div>
                   
                   {daysRemaining > 0 && (
-                    <div className="flex items-center">
-                      <Clock size={16} className="text-gray-500 mr-3" />
+                    <div className="flex items-center gap-3">
+                      <Clock size={16} className="text-gray-500" />
                       <div>
-                        <p className="text-sm text-gray-600">Days Remaining</p>
-                        <p className="text-sm font-medium text-gray-800">{daysRemaining} days</p>
+                        <Text variant="caption" className="text-gray-500">Days Remaining</Text>
+                        <Text variant="small" className="font-medium text-gray-800">{daysRemaining} days</Text>
                       </div>
                     </div>
                   )}
@@ -345,11 +394,11 @@ const AcademicYear = () => {
               {yearProgress > 0 && (
                 <div className="lg:text-right">
                   <div className="inline-block text-left">
-                    <div className="text-3xl font-bold text-gray-800 mb-1">{yearProgress}%</div>
-                    <p className="text-sm text-gray-600 mb-3">Year Progress</p>
+                    <Text variant="h2" className="font-bold text-gray-800 mb-1">{yearProgress}%</Text>
+                    <Text variant="caption" className="text-gray-500 mb-2 block">Year Progress</Text>
                     <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-green-500 rounded-full transition-all duration-300" 
+                        className="h-full bg-[#D94801] rounded-full transition-all duration-300" 
                         style={{ width: `${yearProgress}%` }}
                       ></div>
                     </div>
@@ -357,23 +406,13 @@ const AcademicYear = () => {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         )}
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {/* Quick Stats - Responsive grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {statsCards.map((stat, index) => (
-            <Link key={index} to={stat.link}>
-              <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="flex flex-col items-center text-center">
-                  <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center mb-2`}>
-                    <stat.icon className={stat.iconColor} size={24} />
-                  </div>
-                  <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
-                  <p className="text-sm text-gray-600 mt-1">{stat.title}</p>
-                </div>
-              </div>
-            </Link>
+            <StatCard key={index} {...stat} />
           ))}
         </div>
 
@@ -381,212 +420,154 @@ const AcademicYear = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Current Session Details */}
           {currentSession && (
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
+            <Card className="overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                      <Award size={20} className="text-gray-700" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                      <Award size={16} className="text-gray-700" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800">Current Session</h3>
-                      <p className="text-sm text-gray-600">{currentSession.name || 'No Session Name'}</p>
+                      <Text variant="small" className="font-semibold text-gray-800">Current Session</Text>
+                      <Text variant="caption" className="text-gray-500">{currentSession.name || 'No Session Name'}</Text>
                     </div>
                   </div>
-                  <button
-                    onClick={() => showSessionDetails(currentSession)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <Eye size={18} />
+                  <button onClick={() => showSessionDetails(currentSession)} className="p-1.5 text-gray-500 hover:text-gray-700 rounded-lg transition-colors">
+                    <Eye size={16} />
                   </button>
                 </div>
               </div>
               
-              <div className="px-6 py-4">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-600 font-medium mb-1">Duration</p>
-                    <p className="text-sm text-gray-800">
-                      {currentSession.start_date ? new Date(currentSession.start_date).toLocaleDateString() : 'Not set'} - {currentSession.end_date ? new Date(currentSession.end_date).toLocaleDateString() : 'Not set'}
-                    </p>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium mb-1">Status</p>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        currentSession.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : currentSession.status === 'upcoming'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {currentSession.status?.toUpperCase() || 'UNKNOWN'}
-                      </span>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium mb-1">Current</p>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        currentSession.is_current 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {currentSession.is_current ? 'YES' : 'NO'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {currentSession.description && (
-                    <div className="pt-3 border-t border-gray-200">
-                      <p className="text-sm text-gray-600 font-medium mb-1">Description</p>
-                      <p className="text-sm text-gray-800">{currentSession.description}</p>
-                    </div>
-                  )}
+              <div className="p-4 space-y-3">
+                <div>
+                  <Text variant="caption" className="text-gray-500 font-medium">Duration</Text>
+                  <Text variant="small" className="text-gray-800">
+                    {formatDate(currentSession.start_date)} - {formatDate(currentSession.end_date)}
+                  </Text>
                 </div>
+                
+                <div className="flex gap-4">
+                  <div>
+                    <Text variant="caption" className="text-gray-500 font-medium">Status</Text>
+                    <StatusBadge status={currentSession.status} />
+                  </div>
+                  
+                  <div>
+                    <Text variant="caption" className="text-gray-500 font-medium">Current</Text>
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-medium ${currentSession.is_current ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {currentSession.is_current ? 'YES' : 'NO'}
+                    </span>
+                  </div>
+                </div>
+                
+                {currentSession.description && (
+                  <div className="pt-2 border-t border-gray-100">
+                    <Text variant="caption" className="text-gray-500 font-medium">Description</Text>
+                    <Text variant="caption" className="text-gray-600 mt-1">{currentSession.description}</Text>
+                  </div>
+                )}
               </div>
-            </div>
+            </Card>
           )}
 
           {/* Current Term Details */}
           {currentTerm && (
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
+            <Card className="overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                      <TrendingUp size={20} className="text-gray-700" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                      <TrendingUp size={16} className="text-gray-700" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800">Current Term</h3>
-                      <p className="text-sm text-gray-600">{currentTerm.name || 'No Term Name'}</p>
+                      <Text variant="small" className="font-semibold text-gray-800">Current Term</Text>
+                      <Text variant="caption" className="text-gray-500">{currentTerm.name || 'No Term Name'}</Text>
                     </div>
                   </div>
-                  <button
-                    onClick={() => showTermDetails(currentTerm)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <Eye size={18} />
+                  <button onClick={() => showTermDetails(currentTerm)} className="p-1.5 text-gray-500 hover:text-gray-700 rounded-lg transition-colors">
+                    <Eye size={16} />
                   </button>
                 </div>
               </div>
               
-              <div className="px-6 py-4">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-600 font-medium mb-1">Term</p>
-                    <p className="text-sm font-medium text-gray-800 capitalize">
-                      {currentTerm.term === 'first' ? 'First Term' : 
-                       currentTerm.term === 'second' ? 'Second Term' : 
-                       currentTerm.term === 'third' ? 'Third Term' : 
-                       currentTerm.term || 'Unknown Term'}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm text-gray-600 font-medium mb-1">Schedule</p>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-gray-500">Start Date</p>
-                        <p className="text-sm text-gray-800">
-                          {currentTerm.start_date ? new Date(currentTerm.start_date).toLocaleDateString() : 'N/A'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">End Date</p>
-                        <p className="text-sm text-gray-800">
-                          {currentTerm.end_date ? new Date(currentTerm.end_date).toLocaleDateString() : 'N/A'}
-                        </p>
-                      </div>
+              <div className="p-4 space-y-3">
+                <div>
+                  <Text variant="caption" className="text-gray-500 font-medium">Term</Text>
+                  <Text variant="small" className="font-medium text-gray-800 capitalize">
+                    {currentTerm.term === 'first' ? 'First Term' : 
+                     currentTerm.term === 'second' ? 'Second Term' : 
+                     currentTerm.term === 'third' ? 'Third Term' : 
+                     currentTerm.term || 'Unknown Term'}
+                  </Text>
+                </div>
+                
+                <div>
+                  <Text variant="caption" className="text-gray-500 font-medium">Schedule</Text>
+                  <div className="grid grid-cols-2 gap-3 mt-1">
+                    <div>
+                      <Text variant="tiny" className="text-gray-400">Start Date</Text>
+                      <Text variant="small" className="text-gray-800">{formatDate(currentTerm.start_date)}</Text>
+                    </div>
+                    <div>
+                      <Text variant="tiny" className="text-gray-400">End Date</Text>
+                      <Text variant="small" className="text-gray-800">{formatDate(currentTerm.end_date)}</Text>
                     </div>
                   </div>
-                  
-                  <div>
-                    <p className="text-sm text-gray-600 font-medium mb-1">Status</p>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      currentTerm.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : currentTerm.status === 'upcoming'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {(currentTerm.status || 'Active').toUpperCase()}
-                    </span>
-                  </div>
+                </div>
+                
+                <div>
+                  <Text variant="caption" className="text-gray-500 font-medium">Status</Text>
+                  <StatusBadge status={currentTerm.status} />
                 </div>
               </div>
-            </div>
+            </Card>
           )}
         </div>
 
         {/* Recent Sessions Table */}
         {sessions.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800">Recent Academic Sessions</h3>
-              <p className="text-sm text-gray-600 mt-1">Overview of academic sessions</p>
+          <Card className="overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+              <Text variant="small" className="font-semibold text-gray-800">Recent Academic Sessions</Text>
+              <Text variant="caption" className="text-gray-500">Overview of academic sessions</Text>
             </div>
             
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Session Name
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Duration
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Session Name</th>
+                    <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Duration</th>
+                    <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-50">
                   {sessions.slice(0, 5).map((session) => (
-                    <tr key={session.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                            <Calendar size={16} className="text-gray-600" />
+                    <tr key={session.id} className="hover:bg-gray-50 transition-colors duration-150">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <Calendar size={14} className="text-gray-600" />
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-gray-900">{session.name}</div>
+                            <Text variant="small" className="font-medium text-gray-800">{session.name}</Text>
                             {session.is_current && (
-                              <span className="text-xs text-green-600 font-medium">Current Session</span>
+                              <Text variant="tiny" className="text-green-600 font-medium">Current Session</Text>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {session.start_date ? new Date(session.start_date).toLocaleDateString() : 'N/A'}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          to {session.end_date ? new Date(session.end_date).toLocaleDateString() : 'N/A'}
-                        </div>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        <Text variant="caption" className="text-gray-600">{formatDate(session.start_date)}</Text>
+                        <Text variant="tiny" className="text-gray-400">to {formatDate(session.end_date)}</Text>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          session.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : session.status === 'upcoming'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {session.status?.toUpperCase() || 'UNKNOWN'}
-                        </span>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={session.status} />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => showSessionDetails(session)}
-                          className="text-gray-600 hover:text-gray-900 flex items-center"
-                        >
-                          <Eye size={16} className="mr-1" />
-                          View
+                      <td className="px-4 py-3">
+                        <button onClick={() => showSessionDetails(session)} className="text-gray-500 hover:text-gray-700 flex items-center gap-1">
+                          <Eye size={14} /> <span className="text-[10px]">View</span>
                         </button>
                       </td>
                     </tr>
@@ -595,13 +576,12 @@ const AcademicYear = () => {
               </table>
             </div>
             
-            <div className="px-6 py-4 border-t border-gray-200">
-              <Link to="/academics/sessions" className="text-sm text-gray-600 hover:text-gray-900 flex items-center">
-                View all sessions
-                <ChevronRight size={16} className="ml-1" />
+            <div className="px-4 py-3 border-t border-gray-100">
+              <Link to="/academics/sessions" className="text-[#D94801] hover:text-[#C24000] text-xs flex items-center gap-1">
+                View all sessions <ChevronRight size={12} />
               </Link>
             </div>
-          </div>
+          </Card>
         )}
       </div>
 
@@ -613,55 +593,39 @@ const AcademicYear = () => {
           setSelectedDetails(null);
         }}
         title={selectedDetails?.title || 'Details'}
-        size="md"
+        size="sm"
       >
         {selectedDetails && (
-          <div className="space-y-4">
+          <div className="py-3 space-y-3">
             {selectedDetails.type === 'session' && selectedDetails.data && (
               <>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">{selectedDetails.data.name}</h4>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <Text variant="h4" className="font-bold">{selectedDetails.data.name}</Text>
                   {selectedDetails.data.description && (
-                    <p className="text-sm text-gray-600">{selectedDetails.data.description}</p>
+                    <Text variant="caption" className="text-gray-500 mt-1">{selectedDetails.data.description}</Text>
                   )}
                 </div>
                 
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <p className="text-sm text-gray-500">Start Date</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {selectedDetails.data.start_date ? new Date(selectedDetails.data.start_date).toLocaleDateString() : 'Not set'}
-                      </p>
+                      <Text variant="caption" className="text-gray-500">Start Date</Text>
+                      <Text variant="small" className="font-medium text-gray-900">{formatDate(selectedDetails.data.start_date)}</Text>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">End Date</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {selectedDetails.data.end_date ? new Date(selectedDetails.data.end_date).toLocaleDateString() : 'Not set'}
-                      </p>
+                      <Text variant="caption" className="text-gray-500">End Date</Text>
+                      <Text variant="small" className="font-medium text-gray-900">{formatDate(selectedDetails.data.end_date)}</Text>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <p className="text-sm text-gray-500">Status</p>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        selectedDetails.data.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : selectedDetails.data.status === 'upcoming'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {selectedDetails.data.status?.toUpperCase() || 'UNKNOWN'}
-                      </span>
+                      <Text variant="caption" className="text-gray-500">Status</Text>
+                      <StatusBadge status={selectedDetails.data.status} />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Current Session</p>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        selectedDetails.data.is_current 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
+                      <Text variant="caption" className="text-gray-500">Current Session</Text>
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-medium ${selectedDetails.data.is_current ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                         {selectedDetails.data.is_current ? 'YES' : 'NO'}
                       </span>
                     </div>
@@ -672,62 +636,44 @@ const AcademicYear = () => {
             
             {selectedDetails.type === 'term' && selectedDetails.data && (
               <>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">{selectedDetails.data.name}</h4>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <Text variant="h4" className="font-bold">{selectedDetails.data.name}</Text>
                 </div>
                 
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm text-gray-500">Term</p>
-                    <p className="text-sm font-medium text-gray-900 capitalize">
+                    <Text variant="caption" className="text-gray-500">Term</Text>
+                    <Text variant="small" className="font-medium text-gray-900 capitalize">
                       {selectedDetails.data.term === 'first' ? 'First Term' : 
                        selectedDetails.data.term === 'second' ? 'Second Term' : 
                        selectedDetails.data.term === 'third' ? 'Third Term' : 
                        selectedDetails.data.term || 'Unknown Term'}
-                    </p>
+                    </Text>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <p className="text-sm text-gray-500">Start Date</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {selectedDetails.data.start_date ? new Date(selectedDetails.data.start_date).toLocaleDateString() : 'N/A'}
-                      </p>
+                      <Text variant="caption" className="text-gray-500">Start Date</Text>
+                      <Text variant="small" className="font-medium text-gray-900">{formatDate(selectedDetails.data.start_date)}</Text>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">End Date</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {selectedDetails.data.end_date ? new Date(selectedDetails.data.end_date).toLocaleDateString() : 'N/A'}
-                      </p>
+                      <Text variant="caption" className="text-gray-500">End Date</Text>
+                      <Text variant="small" className="font-medium text-gray-900">{formatDate(selectedDetails.data.end_date)}</Text>
                     </div>
                   </div>
                   
                   <div>
-                    <p className="text-sm text-gray-500">Status</p>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      selectedDetails.data.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : selectedDetails.data.status === 'upcoming'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {(selectedDetails.data.status || 'Active').toUpperCase()}
-                    </span>
+                    <Text variant="caption" className="text-gray-500">Status</Text>
+                    <StatusBadge status={selectedDetails.data.status} />
                   </div>
                 </div>
               </>
             )}
             
-            <div className="flex justify-end pt-4 border-t border-gray-200">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setDetailsModalOpen(false);
-                  setSelectedDetails(null);
-                }}
-              >
+            <div className="flex justify-end pt-3 border-t border-gray-100">
+              <CustomButton variant="outline" size="small" onClick={() => { setDetailsModalOpen(false); setSelectedDetails(null); }}>
                 Close
-              </Button>
+              </CustomButton>
             </div>
           </div>
         )}
